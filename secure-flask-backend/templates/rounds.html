@@ -1,0 +1,62 @@
+<h1>Interview Rounds</h1>
+
+<h2>Round 1 – Aptitude</h2>
+
+<p>This round tests quantitative aptitude skills.</p>
+
+<button onclick="startRound()">Start Round 1</button>
+
+<div id="topics"></div>
+
+<script>
+function startRound(){
+
+const topics = [
+"Problems on Trains",
+"Time and Distance",
+"Height and Distance",
+"Time and Work",
+"Simple Interest",
+"Compound Interest",
+"Profit and Loss",
+"Partnership",
+"Percentage",
+"Problems on Ages",
+"Calendar",
+"Clock",
+"Average",
+"Area",
+"Volume and Surface Area",
+"Permutation and Combination",
+"Numbers",
+"Problems on Numbers",
+"Problems on H.C.F and L.C.M",
+"Decimal Fraction",
+"Simplification",
+"Square Root and Cube Root",
+"Surds and Indices",
+"Ratio and Proportion",
+"Chain Rule",
+"Pipes and Cistern",
+"Boats and Streams",
+"Alligation or Mixture",
+"Logarithm",
+"Races and Games",
+"Stocks and Shares",
+"Probability",
+"True Discount",
+"Banker's Discount",
+"Odd Man Out and Series"
+];
+
+let html = "<h3>Aptitude Topics</h3><ul>";
+
+topics.forEach(t=>{
+html += `<li>${t}</li>`;
+});
+
+html += "</ul>";
+
+document.getElementById("topics").innerHTML = html;
+}
+</script>
