@@ -44,7 +44,7 @@ def create_app(config_name="dev"):
     app.register_blueprint(company_bp, url_prefix='/api/company')
     app.register_blueprint(roadmap_bp, url_prefix='/api/roadmap')
     app.register_blueprint(community_bp, url_prefix='/api/community')
-    app.register_blueprint(arena_bp, url_prefix='/api/arena')
+    app.register_blueprint(arena_bp, url_prefix='/api/code')
 
     # Home page
     @app.route("/", methods=["GET"])

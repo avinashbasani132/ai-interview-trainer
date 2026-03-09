@@ -800,7 +800,7 @@ function renderArena() {
                             <option value="java">Java</option>
                             <option value="cpp">C++</option>
                         </select>
-                        <button onclick="submitArenaCode()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-1 px-4 rounded text-sm transition-colors shadow">
+                        <button type="button" onclick="submitArenaCode()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-1 px-4 rounded text-sm transition-colors shadow">
                             Run Code
                         </button>
                     </div>
@@ -920,28 +920,20 @@ async function submitArenaCode() {
     const language = document.getElementById('arena-lang').value;
 
     try {
-        const res = await fetch(`${API_BASE}/arena/execute`, {
+        const res = await fetch(`${API_BASE}/code/run`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ code: code, language: language, problem_id: 1 })
+            body: JSON.stringify({ code: code, language: language })
         });
         const data = await parseJSON(res);
 
         if (!res.ok) throw new Error(data.error || "Execution Request Failed");
 
-        const color = data.status === 'success' ? 'text-green-400' : 'text-red-400';
-        const bgIndicator = data.status === 'success' ? 'bg-green-900/20 border-green-800' : 'bg-red-900/20 border-red-800';
-
         outPanel.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <span class="font-bold uppercase tracking-wider ${color}">${data.status}</span>
-                <span class="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Time: ${data.execution_time_ms}ms | Memory: ${data.memory_kb}KB</span>
-            </div>
-            <div class="px-4 py-3 rounded border ${bgIndicator} text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">${data.output.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-            ${data.status === 'success' ? `<div class="mt-4 flex items-center gap-2 text-green-500 font-bold text-sm"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Streak updated! +1 Daily Problem Solved</div>` : ''}
+            <div class="px-4 py-3 rounded border bg-slate-900 border-slate-700 text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">${(data.output || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
         `;
     } catch (err) {
         outPanel.innerHTML = `<span class="text-red-500 font-bold border-l-4 border-red-500 pl-3">Connection Error:</span> ${err.message}`;

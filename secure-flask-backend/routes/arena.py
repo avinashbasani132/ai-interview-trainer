@@ -15,12 +15,12 @@ LANGUAGE_IDS = {
     "javascript": 63 # Node.js (12.14.0)
 }
 
-@arena_bp.route('/execute', methods=['POST'])
+@arena_bp.route('/run', methods=['POST'])
 @jwt_required()
 def execute_code():
     """
-    Submits code to Judge0 API for remote execution. 
-    Updates daily streak and DSA solve count on success.
+    Submits code to Judge0 API for remote execution or uses mock fallback.
+    Returns plain output string for the frontend.
     """
     data = request.json
     code = data.get("code", "")
@@ -101,8 +101,5 @@ def execute_code():
                 db.session.commit()
     
     return jsonify({
-        "status": "success" if passed else "failed",
-        "output": output,
-        "execution_time_ms": int(time_ms),
-        "memory_kb": memory_kb
+        "output": output
     }), 200
