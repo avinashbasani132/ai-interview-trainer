@@ -14,11 +14,22 @@ A full-stack AI-powered application designed to simulate realistic interview sce
 - **Backend**: Python, Flask, SQLAlchemy, Flask-JWT-Extended
 - **AI**: Google Generative AI (Gemini)
 
+## Recent Updates (Version 2.0)
+- **Decoupled Architecture:** Separated the Flask backend from the Vanilla JS frontend for true API-driven development.
+- **API Standardization:** Hardened authentication routes (`/register`, `/login`) to use a strict, predictable JSON format.
+- **Security Enhancements:** Implemented global CORS policies and enforced JWT protection on all private routes.
+- **Clean Repository:** Standardized `.gitignore` to prevent secret leaks and cache bloating.
+
+## Architecture
+This project uses a decoupled architecture. The frontend is a pure Vanilla JS application, and the backend is a standalone Flask JSON API.
+
 ## Installation Steps
-1. Clone the repository natively.
+
+### 1. Backend Setup
+1. Clone the repository.
 2. Navigate into the backend directory:
    ```bash
-   cd secure-flask-backend
+   cd backend
    ```
 3. Create a `.env` file containing:
    ```env
@@ -30,7 +41,20 @@ A full-stack AI-powered application designed to simulate realistic interview sce
    ```bash
    pip install -r requirements.txt
    ```
-5. Run the application:
+5. Run the backend API server:
    ```bash
-   python app.py
+   python manage.py --port 5000
    ```
+   The backend will run on `http://127.0.0.1:5000`.
+
+### 2. Frontend Setup
+1. Open a new terminal.
+2. Navigate into the frontend directory:
+   ```bash
+   cd frontend
+   ```
+3. Start a simple static file server (e.g., using Python):
+   ```bash
+   python -m http.server 8000
+   ```
+4. Open your browser and go to `http://localhost:8000` to view the application.
