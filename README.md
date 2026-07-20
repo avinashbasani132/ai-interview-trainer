@@ -1,60 +1,94 @@
-# AI Interview Trainer
+<div align="center">
+  <br />
+  <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Project Status" />
+  <img src="https://img.shields.io/badge/Python-3.x-blue.svg" alt="Python Version" />
+  <img src="https://img.shields.io/badge/Vanilla-JS-yellow.svg" alt="Vanilla JS" />
+  <img src="https://img.shields.io/badge/Flask-Backend-black.svg" alt="Flask Backend" />
+  <br />
+  <h1>🤖 AI Interview Trainer</h1>
+  <p>
+    An enterprise-grade, full-stack AI platform designed to simulate realistic technical and HR interview scenarios, providing candidates with actionable feedback and analytics.
+  </p>
+</div>
 
-A full-stack AI-powered application designed to simulate realistic interview scenarios, complete with Aptitude, Technical, and HR rounds.
+<br />
 
-## Features
-- **AI Interview Simulation**: Realistic, conversational mock interviews powered by Google Gemini.
-- **Resume Analysis**: ATS compatibility scoring and extraction of strengths and weaknesses.
-- **Aptitude Testing**: Automated MCQ testing with immediate feedback.
-- **Coding Arena**: Live code execution environment for practicing DSA problems.
-- **Performance Analytics**: Visual dashboards showing round success rates and ML predictions.
+## 📖 Overview
 
-## Tech Stack
-- **Frontend**: Vanilla JavaScript, TailwindCSS, Chart.js
-- **Backend**: Python, Flask, SQLAlchemy, Flask-JWT-Extended
-- **AI**: Google Generative AI (Gemini)
+The **AI Interview Trainer** is a robust, production-ready application aimed at bridging the gap between theoretical knowledge and practical interview execution. By leveraging advanced Large Language Models (Google Gemini), the platform offers dynamic, conversational mock interviews, real-time code execution, and comprehensive ATS resume analysis. 
 
-## Recent Updates (Version 2.0)
-- **Decoupled Architecture:** Separated the Flask backend from the Vanilla JS frontend for true API-driven development.
-- **API Standardization:** Hardened authentication routes (`/register`, `/login`) to use a strict, predictable JSON format.
-- **Security Enhancements:** Implemented global CORS policies and enforced JWT protection on all private routes.
-- **Clean Repository:** Standardized `.gitignore` to prevent secret leaks and cache bloating.
+Built with a strictly decoupled architecture, the system ensures maximum scalability, security, and maintainability.
 
-## Architecture
-This project uses a decoupled architecture. The frontend is a pure Vanilla JS application, and the backend is a standalone Flask JSON API.
+## ✨ Core Features
 
-## Installation Steps
+- **🧠 Dynamic AI Interviews:** Engaging, adaptive mock interviews for Technical and HR rounds that adjust difficulty based on candidate responses.
+- **📄 Smart Resume Analysis:** Advanced ATS compatibility parsing that extracts core strengths, identifies weaknesses, and generates tailored interview questions.
+- **💻 Live Coding Arena:** A HackerRank-style embedded execution environment allowing users to practice Data Structures and Algorithms (DSA) without leaving the browser.
+- **📊 Comprehensive Analytics:** Visual performance dashboards utilizing Chart.js to track historical success rates, module completions, and ML-driven readiness predictions.
+- **⏱️ Automated Aptitude Testing:** Timed, automatically graded multiple-choice tests assessing quantitative and logical reasoning.
 
-### 1. Backend Setup
-1. Clone the repository.
-2. Navigate into the backend directory:
+## 🛠️ Technology Stack
+
+Our architecture strictly separates concerns between the client and server:
+
+### Frontend Layer
+- **Core:** Vanilla JavaScript (ES6+), HTML5
+- **Styling:** TailwindCSS (CDN for zero-build overhead)
+- **Visualization:** Chart.js
+
+### Backend API Layer
+- **Framework:** Python Flask (Strict JSON API)
+- **Database:** SQLite / SQLAlchemy (ORM)
+- **Security:** Flask-JWT-Extended, Flask-CORS, Bcrypt
+- **AI Integration:** Google Generative AI (Gemini)
+
+## 🚀 Recent Architecture Updates (v2.0)
+
+To ensure enterprise-level stability, the application has recently undergone a major architectural refactor:
+- **True Decoupling:** Stripped all UI rendering from the Flask server. The frontend and backend now operate as completely isolated services.
+- **API Standardization:** Enforced a strict `{ "success", "message", "data" }` JSON response schema across all endpoints.
+- **Enhanced Security:** Implemented comprehensive CORS policies and fortified JWT validation sequences.
+
+---
+
+## ⚙️ Local Development Setup
+
+To run the application locally, you must spin up both the backend API and the frontend client.
+
+### 1. Backend API Initialization
+1. Clone the repository and navigate to the backend directory:
    ```bash
-   cd backend
+   git clone https://github.com/avinashbasani132/ai-interview-trainer.git
+   cd ai-interview-trainer/backend
    ```
-3. Create a `.env` file containing:
+2. Create a `.env` file in the `backend` root:
    ```env
-   API_KEY=your_gemini_api_key
-   SECRET_KEY=your_secret_key
-   JWT_SECRET_KEY=your_jwt_secret
+   API_KEY=your_google_gemini_api_key
+   SECRET_KEY=your_secure_flask_secret
+   JWT_SECRET_KEY=your_secure_jwt_secret
    ```
-4. Install dependencies:
+3. Install the required Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-5. Run the backend API server:
+4. Start the secure API server (Defaults to Port 5000):
    ```bash
    python manage.py --port 5000
    ```
-   The backend will run on `http://127.0.0.1:5000`.
 
-### 2. Frontend Setup
-1. Open a new terminal.
-2. Navigate into the frontend directory:
+### 2. Frontend Client Initialization
+1. Open a new terminal instance and navigate to the frontend directory:
    ```bash
-   cd frontend
+   cd ai-interview-trainer/frontend
    ```
-3. Start a simple static file server (e.g., using Python):
+2. Start a static HTTP server (using Python's built-in module):
    ```bash
    python -m http.server 8000
    ```
-4. Open your browser and go to `http://localhost:8000` to view the application.
+3. Access the application by navigating to `http://localhost:8000` in your browser.
+
+---
+
+<div align="center">
+  <p>Built with ❤️ by Avinash &copy; 2026</p>
+</div>
