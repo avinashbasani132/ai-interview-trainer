@@ -26,6 +26,13 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Marked.js (Markdown) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Highlight.js (Code syntax) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
     <!-- Custom CSS -->
     <style>
         body {
@@ -100,7 +107,7 @@
                 </h1>
             </div>
             <nav class="flex-1 mt-6 px-4 space-y-2">
-                <a href="#" onclick="renderDashboard(); toggleMap()"
+                <a href="#" id="nav-dashboard" onclick="renderDashboard(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -109,7 +116,7 @@
                     </svg>
                     Dashboard
                 </a>
-                <a href="#" onclick="renderResumePage(); toggleMap()"
+                <a href="#" id="nav-resume" onclick="renderResumePage(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -118,7 +125,7 @@
                     </svg>
                     Resume
                 </a>
-                <a href="#" onclick="renderRounds(); toggleMap()"
+                <a href="#" id="nav-rounds" onclick="renderRounds(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -127,7 +134,7 @@
                     </svg>
                     Rounds
                 </a>
-                <a href="#" onclick="renderHistory(); toggleMap()"
+                <a href="#" id="nav-history" onclick="renderHistory(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -135,7 +142,7 @@
                     </svg>
                     History
                 </a>
-                <a href="#" onclick="renderLearning(); toggleMap()"
+                <a href="#" id="nav-learning" onclick="renderLearning(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -144,7 +151,7 @@
                     </svg>
                     Learning
                 </a>
-                <a href="#" onclick="renderArena(); toggleMap()"
+                <a href="#" id="nav-arena" onclick="renderArena(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -152,7 +159,7 @@
                     </svg>
                     Arena
                 </a>
-                <a href="#" onclick="renderLeaderboard(); toggleMap()"
+                <a href="#" id="nav-leaderboard" onclick="renderLeaderboard(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -160,7 +167,7 @@
                     </svg>
                     Leaderboard
                 </a>
-                <a href="#" onclick="renderCommunity(); toggleMap()"
+                <a href="#" id="nav-community" onclick="renderCommunity(); toggleMap()"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -171,7 +178,7 @@
                 </a>
             </nav>
             <div class="p-4 border-t border-slate-800">
-                <a href="#" onclick="renderProfile(); toggleMap()"
+                <a href="#" id="nav-profile" onclick="renderProfile(); toggleMap()"
                     class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors mb-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -243,6 +250,102 @@
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.41.0/min/vs' } });
     </script>
     <script src="js/app.js"></script>
+
+    <!-- ═══ AI CAREER ASSISTANT CHATBOT WIDGET ═══ -->
+    <div id="chat-widget" class="auth-required" style="display:none">
+
+        <!-- Floating Trigger Button -->
+        <button id="chat-fab" onclick="toggleChat()"
+            title="AI Career Assistant"
+            class="fixed bottom-6 right-6 z-[100] w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-2xl shadow-indigo-500/40 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group">
+            <div id="chat-fab-icon" class="transition-all duration-300">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+            </div>
+            <!-- Pulse ring -->
+            <span class="absolute inset-0 rounded-full bg-indigo-500/30 animate-ping opacity-75"></span>
+            <!-- Notification dot -->
+            <span id="chat-notify" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 hidden"></span>
+        </button>
+
+        <!-- Chat Panel -->
+        <div id="chat-panel"
+            class="fixed bottom-28 right-6 z-[99] w-[380px] max-h-[600px] bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right scale-0 opacity-0 pointer-events-none">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">🤖</div>
+                    <div>
+                        <p class="text-white font-bold text-sm">AI Career Mentor</p>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            <p class="text-white/70 text-[11px]">Online · Powered by Gemini</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="clearChatHistory()" title="Clear conversation"
+                        class="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs">
+                        🗑️
+                    </button>
+                    <button onclick="toggleChat()" title="Close"
+                        class="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[400px] scroll-smooth"
+                style="scrollbar-width:thin;scrollbar-color:#334155 transparent">
+                <!-- Messages injected by JS -->
+            </div>
+
+            <!-- Suggested Questions (shown when empty) -->
+            <div id="chat-suggestions" class="px-4 pb-2 hidden">
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-2">Suggested</p>
+                <div id="chat-suggestion-list" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div id="chat-typing" class="px-4 pb-2 hidden">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-indigo-900/60 border border-indigo-700/50 flex items-center justify-center text-xs">🤖</div>
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl rounded-bl-sm px-3 py-2 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div class="p-3 border-t border-slate-700/60 bg-slate-900">
+                <div class="flex gap-2">
+                    <textarea id="chat-input"
+                        placeholder="Ask me anything about your career..."
+                        rows="1"
+                        onkeydown="handleChatKey(event)"
+                        oninput="autoResizeChatInput(this)"
+                        class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all max-h-[120px] overflow-y-auto"
+                        style="scrollbar-width:none"></textarea>
+                    <button id="chat-send-btn" onclick="sendChatMessage()"
+                        class="w-10 h-10 mt-0.5 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-slate-600 text-[10px] mt-1.5 text-center">AI may make mistakes. Verify important information.</p>
+            </div>
+        </div>
+    </div>
+    <!-- ═══ END CHATBOT WIDGET ═══ -->
 
     <!-- Premium Footer -->
     <footer class="w-full border-t border-slate-800/50 bg-slate-900/40 backdrop-blur-md py-6 px-8 auth-required transition-all duration-500 shrink-0" style="display:none" id="app-footer">

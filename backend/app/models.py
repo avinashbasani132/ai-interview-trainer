@@ -73,14 +73,59 @@ class ResumeData(db.Model):
     __tablename__ = 'resume_data'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # ── File Info ────────────────────────────────────────────────────────────
+    filename = db.Column(db.String(255), nullable=True)
+    file_type = db.Column(db.String(10), nullable=True)           # pdf / docx
+    resume_version = db.Column(db.Integer, nullable=True, default=1)
+
+    # ── Extracted Content ─────────────────────────────────────────────────────
     extracted_text = db.Column(db.Text, nullable=False)
-    extracted_skills = db.Column(db.Text, nullable=True) 
-    score = db.Column(db.Float, nullable=True) # AI Resume Score (0-100)
-    suggestions_json = db.Column(db.Text, nullable=True) # JSON list
-    missing_skills_json = db.Column(db.Text, nullable=True) # JSON list
-    strengths_json = db.Column(db.Text, nullable=True) # ATS Strengths
-    weaknesses_json = db.Column(db.Text, nullable=True) # ATS Weaknesses
+    extracted_skills = db.Column(db.Text, nullable=True)          # JSON list
+    skills_by_category_json = db.Column(db.Text, nullable=True)   # JSON dict {category: [skills]}
+    soft_skills_json = db.Column(db.Text, nullable=True)          # JSON list
+
+    # ── Scores ───────────────────────────────────────────────────────────────
+    score = db.Column(db.Float, nullable=True)                    # ATS Total Score (0-100)
+    ats_breakdown_json = db.Column(db.Text, nullable=True)        # JSON dict: {section: {score, max, details}}
+
+    # ── Contact & Sections ───────────────────────────────────────────────────
+    contact_info_json = db.Column(db.Text, nullable=True)         # JSON: {email, phone, github, linkedin, portfolio}
+    sections_json = db.Column(db.Text, nullable=True)             # JSON dict of detected sections
+
+    # ── Analysis Results ─────────────────────────────────────────────────────
+    missing_sections_json = db.Column(db.Text, nullable=True)     # JSON list
+    suggestions_json = db.Column(db.Text, nullable=True)          # JSON list
+    missing_skills_json = db.Column(db.Text, nullable=True)       # JSON list
+    strengths_json = db.Column(db.Text, nullable=True)            # JSON list
+    weaknesses_json = db.Column(db.Text, nullable=True)           # JSON list
+
+    # ── Grammar & Formatting ─────────────────────────────────────────────────
+    grammar_analysis_json = db.Column(db.Text, nullable=True)     # JSON dict
+    ats_compatibility_json = db.Column(db.Text, nullable=True)    # JSON dict
+
+    # ── Keywords ─────────────────────────────────────────────────────────────
+    keyword_matches_json = db.Column(db.Text, nullable=True)      # JSON list
+    missing_keywords_json = db.Column(db.Text, nullable=True)     # JSON list
+    keyword_density = db.Column(db.Float, nullable=True)          # float %
+
+    # ── Readiness ────────────────────────────────────────────────────────────
+    job_readiness_json = db.Column(db.Text, nullable=True)        # JSON dict: {technical, quality, project, communication, overall}
+    interview_readiness = db.Column(db.String(50), nullable=True) # Excellent/Good/Average/Needs Improvement
+    interview_readiness_reason = db.Column(db.Text, nullable=True)
+
+    # ── Interview Questions ───────────────────────────────────────────────────
+    interview_questions_json = db.Column(db.Text, nullable=True)  # JSON {easy:[..], medium:[..], hard:[..]}
+
+    # ── Learning Roadmap ─────────────────────────────────────────────────────
+    learning_roadmap_json = db.Column(db.Text, nullable=True)     # JSON dict
+
+    # ── Meta ─────────────────────────────────────────────────────────────────
+    experience_level = db.Column(db.String(100), nullable=True)
+    quantified_achievements = db.Column(db.Integer, nullable=True, default=0)
+    certifications_count = db.Column(db.Integer, nullable=True, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class LearningRecommendation(db.Model):
     __tablename__ = 'learning_recommendations'
@@ -186,3 +231,12 @@ class LearningRoadmap(db.Model):
     step_name = db.Column(db.String(100), nullable=False)
     step_order = db.Column(db.Integer, nullable=False)
     is_completed = db.Column(db.Boolean, default=False)
+
+class ChatMessage(db.Model):
+    """Stores AI Career Assistant chat history per user."""
+    __tablename__ = 'chat_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)    # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

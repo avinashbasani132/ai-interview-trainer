@@ -2,7 +2,8 @@ import os
 import json
 import logging
 from PyPDF2 import PdfReader
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,12 @@ class GeminiService:
     def __init__(self):
         # The key is loaded safely from backend configuration
         api_key = os.getenv("API_KEY")
+        self.client = None
+        self.model_name = 'gemini-2.0-flash'
         if not api_key:
             logger.warning("Gemini API_KEY is missing! Evaluator features will fail.")
         else:
-            genai.configure(api_key=api_key)
-            # Use gemini-1.5-flash as the fast and standard text model
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=api_key)
 
     def parse_resume(self, pdf_file) -> dict:
         """
@@ -65,7 +66,9 @@ class GeminiService:
     """
         
         try:
-            response = self.model.generate_content(prompt)
+            if not self.client:
+                raise GenericAIServiceError("API key not configured")
+            response = self.client.models.generate_content(model=self.model_name, contents=prompt)
             # Parse the text carefully to ensure it's valid JSON.
             result_json = json.loads(response.text.strip())
             # Ensure expected keys exist even if model skips them
@@ -108,7 +111,9 @@ class GeminiService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            if not self.client:
+                raise GenericAIServiceError("API key not configured")
+            response = self.client.models.generate_content(model=self.model_name, contents=prompt)
             res_text = response.text.strip()
             # Basic Markdown JSON sanitization
             if res_text.startswith("```json"): res_text = res_text[7:]
@@ -155,7 +160,9 @@ class GeminiService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            if not self.client:
+                raise GenericAIServiceError("API key not configured")
+            response = self.client.models.generate_content(model=self.model_name, contents=prompt)
             res_text = response.text.strip()
             if res_text.startswith("```json"): res_text = res_text[7:]
             if res_text.endswith("```"): res_text = res_text[:-3]
@@ -189,7 +196,9 @@ class GeminiService:
         {text_or_skills}
         """
         try:
-            response = self.model.generate_content(prompt)
+            if not self.client:
+                raise GenericAIServiceError("API key not configured")
+            response = self.client.models.generate_content(model=self.model_name, contents=prompt)
             res_text = response.text.strip()
             if res_text.startswith("```json"): res_text = res_text[7:]
             if res_text.endswith("```"): res_text = res_text[:-3]

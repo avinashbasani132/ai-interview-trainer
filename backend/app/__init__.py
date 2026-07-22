@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 import traceback
 from app.core.config import config_by_name
 from app.models import db
@@ -13,8 +13,11 @@ def create_app(config_name="dev"):
     Creates and configures the Flask application cleanly without global state.
     """
 
-    # Backend now serves purely as a JSON API
-    app = Flask(__name__)
+    # Resolve the frontend folder (one level up from backend/)
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../frontend'))
+
+    # Serve frontend static files and SPA index.html
+    app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
 
     # Load configuration securely from the config dictionary
     app.config.from_object(config_by_name.get(config_name, config_by_name["dev"]))
@@ -36,6 +39,7 @@ def create_app(config_name="dev"):
     from app.routes.community import community_bp
     from app.routes.arena import arena_bp
     from app.routes.dsa import dsa_bp
+    from app.routes.chatbot import chatbot_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(resume_bp, url_prefix='/api/resume')
@@ -47,6 +51,7 @@ def create_app(config_name="dev"):
     app.register_blueprint(roadmap_bp, url_prefix='/api/roadmap')
     app.register_blueprint(community_bp, url_prefix='/api/community')
     app.register_blueprint(arena_bp, url_prefix='/api/code')
+    app.register_blueprint(chatbot_bp, url_prefix='/api/chat')
 
     # Health check
     @app.route("/health", methods=["GET"])
@@ -56,6 +61,17 @@ def create_app(config_name="dev"):
             "status": "healthy",
             "environment": config_name
         }), 200
+
+    # Serve the frontend SPA for any non-API route
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        """Serve the frontend single-page application."""
+        # Let Flask serve actual static files (js/, css/, images/)
+        if path and os.path.exists(os.path.join(frontend_dir, path)):
+            return send_from_directory(frontend_dir, path)
+        # Fall back to index.html for SPA routing
+        return send_from_directory(frontend_dir, 'index.html')
 
     # Error handlers
     @app.errorhandler(404)
