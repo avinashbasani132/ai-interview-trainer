@@ -116,7 +116,6 @@ def execute_code():
             output = f"Execution error: {str(e)}"
         finally:
             try:
-                import os
                 os.unlink(tmp_path)
             except Exception:
                 pass

@@ -7,7 +7,7 @@
 
 // State
 let token = localStorage.getItem('access_token');
-const API_BASE = 'http://127.0.0.1:8000/api';
+const API_BASE = '/api';
 let monacoEditor = null;
 let currentSessionId = null;
 let currentAptitudeQuestions = [];
@@ -35,16 +35,21 @@ function renderApp() {
     const sidebar = document.getElementById('sidebar');
     const mobileHeader = document.querySelector('header.md\\:hidden');
     const footer = document.getElementById('app-footer');
+    const chatWidget = document.getElementById('chat-widget');
 
     if (token && token !== 'undefined' && token !== 'null') {
         if (sidebar) sidebar.classList.remove('hidden');
         if (mobileHeader) mobileHeader.classList.remove('hidden');
         if (footer) footer.style.display = '';
+        // ── Show chat widget for authenticated users ────────
+        if (chatWidget) chatWidget.style.display = '';
         renderDashboard();
     } else {
         if (sidebar) sidebar.classList.add('hidden');
         if (mobileHeader) mobileHeader.classList.add('hidden');
         if (footer) footer.style.display = 'none';
+        // ── Hide chat widget on logout ──────────────────────
+        if (chatWidget) chatWidget.style.display = 'none';
         renderAuth();
     }
 }
@@ -52,6 +57,14 @@ function renderApp() {
 function logout() {
     localStorage.removeItem('access_token');
     token = null;
+    // Reset chatbot state on logout (guard: chatbot module may not yet be loaded)
+    if (typeof chatOpen !== 'undefined')       chatOpen = false;
+    if (typeof chatInitialized !== 'undefined') chatInitialized = false;
+    const panel = document.getElementById('chat-panel');
+    if (panel) {
+        panel.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
+        panel.classList.remove('scale-100', 'opacity-100');
+    }
     renderApp();
 }
 
@@ -265,7 +278,7 @@ async function renderDashboard() {
             <!-- Actions -->
             <div>
                 <h3 class="text-lg font-bold text-white mb-4">Quick Actions</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl hover:border-blue-500/60 transition-all cursor-pointer flex justify-between items-center group"
                         onclick="startInterview()">
                         <div>
@@ -281,6 +294,24 @@ async function renderDashboard() {
                             Resume Analysis
                         </h3>
                         <p class="text-slate-400 text-sm">Upload & get AI-powered feedback on your resume.</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl hover:border-indigo-500/60 transition-all relative group flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-indigo-400 mb-1 flex items-center gap-2">
+                                📝 Resume-Based Interview
+                            </h3>
+                            <p class="text-slate-400 text-sm mb-4">Take an AI interview based on your uploaded resume.</p>
+                        </div>
+                        <div class="flex flex-col gap-2 w-full mt-auto">
+                            <button onclick="renderResumeInterviewSetup()" class="w-full text-left text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-3 rounded-lg flex justify-between items-center transition-colors">
+                                <span>Upload / Start Interview</span>
+                                <span>➔</span>
+                            </button>
+                            <button onclick="renderResumeInterviewHistory()" class="w-full text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 px-3 rounded-lg flex justify-between items-center transition-colors">
+                                <span>View Previous Reports</span>
+                                <span>➔</span>
+                            </button>
+                        </div>
                     </div>
                     ${dsaHtml || `<div class="bg-slate-900 border border-slate-700/40 p-6 rounded-xl flex flex-col justify-center items-center text-slate-600 text-sm gap-2">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
@@ -2657,15 +2688,28 @@ async function sendChatMessage() {
     chatLoading = true;
     setChatLoading(true);
 
+    // Build resume context payload (STEP 7 – resume integration)
+    const payload = { message };
+    if (typeof chatSession !== 'undefined') {
+        if (chatSession.resumeText)  payload.resume_text  = chatSession.resumeText;
+        if (chatSession.resumeName)  payload.resume_name  = chatSession.resumeName;
+        if (chatSession.atsScore !== null) payload.ats_score = chatSession.atsScore;
+    }
+
     try {
+        const controller = new AbortController();
+        const timeoutId  = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
         const res = await fetch(`${API_BASE}/chat/message`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message })
+            body: JSON.stringify(payload),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (res.status === 401 || res.status === 422) { logout(); return; }
 
@@ -2683,7 +2727,9 @@ async function sendChatMessage() {
     } catch (err) {
         setChatLoading(false);
         chatLoading = false;
-        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        if (err.name === 'AbortError') {
+            appendChatMessage('assistant', '⏱️ **Request timed out.** The server took too long. Please try again.', true);
+        } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
             appendChatMessage('assistant', '🔴 **Network error.** Cannot reach the server. Please check your connection.', true);
         } else {
             appendChatMessage('assistant', '⚠️ An error occurred: ' + err.message, true);
@@ -2841,22 +2887,9 @@ function autoResizeChatInput(el) {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-// ── Integrate with renderApp: show/hide widget on auth ───────
-const _origRenderApp = renderApp;
-// Monkey-patch to show widget when authenticated
-(function() {
-    const origRenderApp = window.renderApp;
-    window.renderApp = function() {
-        origRenderApp.call(this);
-        if (token && token !== 'undefined' && token !== 'null') {
-            showChatWidget();
-        } else {
-            hideChatWidget();
-            chatOpen = false;
-            chatInitialized = false;
-        }
-    };
-})();
+// ── Widget visibility is handled directly in renderApp() ─────
+// renderApp() was patched at the top of app.js to show/hide
+// the chat widget based on auth state — no monkey-patch needed.
 
 // ── CSS: fade-in animation & chat prose styles ────────────────
 (function injectChatStyles() {
@@ -2913,11 +2946,874 @@ const _origRenderApp = renderApp;
     document.head.appendChild(style);
 })();
 
-// ── Auto-init if already logged in ───────────────────────────
+// ── Auto-init: widget visibility is already set by renderApp() ─
+// showChatWidget() is a safety net for edge cases.
 if (token && token !== 'undefined' && token !== 'null') {
     showChatWidget();
+}
+
+// ============================================================================
+//   RESUME-BASED AI INTERVIEW MODULE
+// ============================================================================
+let resumeInterviewSession = null;
+let resumeInterviewTimer = null;
+let resumeInterviewDurationSeconds = 0;
+let resumeInterviewVoiceRecognition = null;
+let resumeInterviewIsListening = false;
+let resumeInterviewTtsEnabled = false;
+
+// ── Setup Page: select existing resume or upload new ──────────────────────
+async function renderResumeInterviewSetup() {
+    setActiveNav('dashboard'); // keep focus in dashboard context
+    const container = document.getElementById('app-container');
+    showLoader();
+    
+    try {
+        // Fetch user's uploaded resume history
+        const res = await fetch(`${API_BASE}/resume/history`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error("Failed to load resume history");
+        const historyData = await parseJSON(res);
+        const history = historyData.history || [];
+        
+        let dropdownHtml = `<option value="">-- Choose from History --</option>`;
+        if (history.length > 0) {
+            dropdownHtml += history.map(h => `<option value="${h.id}">${h.filename} (Score: ${h.score?.toFixed(0) || 'N/A'})</option>`).join('');
+        }
+        
+        container.innerHTML = `
+        <div class="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+            <!-- Header -->
+            <div class="border-b border-slate-800 pb-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-black text-white flex items-center gap-3">
+                        <span class="text-indigo-500 font-normal">📝</span> Resume-Based AI Interview Setup
+                    </h1>
+                    <p class="text-slate-400 mt-1">Select an existing resume or upload a new one to generate a tailored interview plan.</p>
+                </div>
+                <button onclick="renderDashboard()" class="text-slate-400 hover:text-white text-sm font-semibold flex items-center gap-1">
+                    ← Back
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Select Existing Resume -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-2xl">📋</span>
+                            <h3 class="text-lg font-bold text-white">Select from History</h3>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-6">Choose a resume you have already uploaded and analyzed on the platform.</p>
+                        
+                        <select id="existing-resume-select" class="w-full bg-slate-800 border border-slate-700 text-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
+                            ${dropdownHtml}
+                        </select>
+                    </div>
+                    <button onclick="startInterviewWithExisting()" class="mt-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95 w-full">
+                        Start with Selected Resume
+                    </button>
+                </div>
+                
+                <!-- Upload New Resume -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-2xl">📤</span>
+                            <h3 class="text-lg font-bold text-white">Upload New Resume</h3>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">Upload a new PDF or DOCX file specifically for this interview session.</p>
+                        
+                        <div id="setup-upload-zone" class="border-2 border-dashed border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-indigo-500 transition-all cursor-pointer group"
+                            onclick="document.getElementById('setup-file-input').click()"
+                            ondragover="event.preventDefault(); this.classList.add('border-indigo-500')"
+                            ondragleave="this.classList.remove('border-indigo-500')"
+                            ondrop="handleSetupResumeDrop(event)">
+                            <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-900 transition-colors">
+                                <svg class="w-6 h-6 text-slate-400 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                            </div>
+                            <p class="text-slate-400 text-xs font-semibold">PDF or DOCX (Max 10MB)</p>
+                            <input id="setup-file-input" type="file" class="hidden" accept=".pdf,.docx" onchange="uploadSetupResume(event)">
+                        </div>
+                    </div>
+                    <div id="setup-upload-status" class="mt-4 hidden"></div>
+                </div>
+            </div>
+        </div>`;
+    } catch(err) {
+        container.innerHTML = `<p class="text-red-400 text-center mt-20">Error loading setup view: ${err.message}</p>`;
+    }
+}
+
+function handleSetupResumeDrop(e) {
+    e.preventDefault();
+    document.getElementById('setup-upload-zone').classList.remove('border-indigo-500');
+    const file = e.dataTransfer.files[0];
+    if (file) processSetupResumeFile(file);
+}
+
+function uploadSetupResume(e) {
+    const file = e.target.files[0];
+    if (file) processSetupResumeFile(file);
+}
+
+async function processSetupResumeFile(file) {
+    const statusEl = document.getElementById('setup-upload-status');
+    statusEl.classList.remove('hidden');
+    statusEl.innerHTML = `
+    <div class="bg-indigo-900/20 border border-indigo-700 text-indigo-300 p-4 rounded-xl flex items-center gap-3">
+        <div class="animate-spin w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full"></div> 
+        Extracting details and generating plan...
+    </div>`;
+
+    const formData = new FormData();
+    formData.append('resume', file);
+
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        const data = await parseJSON(res);
+        if (!res.ok) throw new Error(data.error || "Failed to process resume");
+        renderResumeInterviewAnalysis(data);
+    } catch(e) {
+        statusEl.innerHTML = `<div class="bg-red-900/20 border border-red-700 text-red-300 p-4 rounded-xl">❌ ${e.message}</div>`;
+    }
+}
+
+async function startInterviewWithExisting() {
+    const select = document.getElementById('existing-resume-select');
+    const id = select.value;
+    if (!id) { showToast("Please select a resume from your history.", "warning"); return; }
+    
+    showLoader();
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/select-existing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ resume_id: id })
+        });
+        const data = await parseJSON(res);
+        if (!res.ok) throw new Error(data.error || "Failed to start interview");
+        renderResumeInterviewAnalysis(data);
+    } catch(err) {
+        showToast(err.message, "error");
+        renderResumeInterviewSetup();
+    }
+}
+
+// ── Render Analysis & Plan Page ───────────────────────────
+function renderResumeInterviewAnalysis(session) {
+    resumeInterviewSession = session;
+    const container = document.getElementById('app-container');
+    
+    const details = session.details || {};
+    const plan = session.plan || [];
+    const projects = details.projects || [];
+    
+    const planQuestionsHtml = plan.map((q, i) => `
+    <li class="flex items-start gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
+        <span class="w-6 h-6 rounded-full bg-indigo-900 border border-indigo-700 text-indigo-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">${i+1}</span>
+        <p class="text-slate-200 text-sm leading-relaxed">${q}</p>
+    </li>`).join('');
+
+    container.innerHTML = `
+    <div class="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
+        <!-- Header -->
+        <div class="border-b border-slate-800 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-white">Interview Plan Generated</h1>
+                <p class="text-slate-400 mt-1">Review the resume analysis and generated question path before starting.</p>
+            </div>
+            <div class="flex gap-3">
+                <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-900/60 border border-indigo-700 text-indigo-300">
+                    🎯 Level: ${session.difficulty}
+                </span>
+                <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-green-900/60 border border-green-700 text-green-300">
+                    📄 ${session.resume_name}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Details Left -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Extracted Profile -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h3 class="font-bold text-white text-lg flex items-center gap-2">🔍 Extracted Profile Summary</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold uppercase">Name</p>
+                            <p class="text-white font-semibold mt-0.5">${details.name || 'Not detected'}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold uppercase">Education</p>
+                            <p class="text-white font-semibold mt-0.5">${details.education?.[0] || 'Not detected'}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <p class="text-xs text-slate-500 font-bold uppercase mb-1">Key Technologies</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${details.technologies?.map(t => `<span class="text-xs px-2 py-0.5 bg-blue-900/40 border border-blue-700/40 text-blue-300 rounded-full">${t}</span>`).join('') || '<span class="text-slate-500">None detected</span>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-lg mb-4 flex items-center gap-2">🚀 Projects</h3>
+                    <div class="space-y-4">
+                        ${projects.map(p => `
+                        <div class="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2">
+                            <h4 class="font-bold text-white text-sm">${p.title}</h4>
+                            <p class="text-slate-400 text-xs">${p.description}</p>
+                            <p class="text-xs text-slate-500">Technologies: <span class="text-slate-300">${p.technologies?.join(', ') || 'N/A'}</span></p>
+                        </div>`).join('') || '<p class="text-slate-500 text-xs">No projects listed</p>'}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan / Start Right -->
+            <div class="space-y-6">
+                <!-- Action Card -->
+                <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 text-center space-y-4 shadow-xl shadow-indigo-950/10">
+                    <h3 class="font-bold text-white text-lg">Ready to begin?</h3>
+                    <p class="text-slate-400 text-sm">The interview contains 5 core questions plus adaptive follow-ups based on your responses.</p>
+                    
+                    <button onclick="startResumeInterview()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95 w-full">
+                        Start AI Interview Now
+                    </button>
+                </div>
+
+                <!-- Plan Path -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-base mb-3 flex items-center gap-2">📋 Interview Question Plan</h3>
+                    <ol class="space-y-3">${planQuestionsHtml}</ol>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ── Start Interview Flow ──────────────────────────────────
+function startResumeInterview() {
+    resumeInterviewDurationSeconds = 0;
+    resumeInterviewTimer = setInterval(() => {
+        resumeInterviewDurationSeconds++;
+    }, 1000);
+    
+    renderResumeInterviewFlow();
+}
+
+async function renderResumeInterviewFlow() {
+    const container = document.getElementById('app-container');
+    showLoader();
+    
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/session/${resumeInterviewSession.session_id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const sessionState = await parseJSON(res);
+        if (!res.ok) throw new Error(sessionState.error || "Failed to load session details");
+
+        const qAsked = sessionState.questions_asked || [];
+        const currentQ = qAsked[qAsked.length - 1]; // Current question is the last one in asked list
+        const totalPlanned = 5;
+        const mainIdx = sessionState.current_question_idx;
+        
+        // Check if last question asked was a main question or a follow-up
+        const isFollowUp = qAsked.length > (2 * mainIdx + 1);
+
+        container.innerHTML = `
+        <div class="w-full max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-10">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                    <span class="text-xs text-indigo-400 uppercase tracking-widest font-bold">Resume-Based Interview</span>
+                    <h2 class="text-2xl font-black text-white flex items-center gap-2 mt-1">
+                        Question ${mainIdx + 1} of ${totalPlanned} 
+                        ${isFollowUp ? '<span class="text-xs bg-purple-900 border border-purple-700 text-purple-300 px-2.5 py-1 rounded-full font-bold ml-2">adaptive follow-up</span>' : ''}
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- Typing / Voice Toggles -->
+                    <button id="mode-typing-btn" onclick="toggleResumeInterviewInputMode('typing')" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold border border-indigo-500 shadow transition-all active:scale-95">Typing Mode</button>
+                    <button id="mode-voice-btn" onclick="toggleResumeInterviewInputMode('voice')" class="px-3.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95">Voice Mode</button>
+                </div>
+            </div>
+
+            <!-- Voice Controls Display (Hidden in Typing Mode) -->
+            <div id="voice-controls-panel" class="hidden bg-slate-900 border border-indigo-500/20 p-4 rounded-xl flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2 text-xs text-slate-300">
+                    <span class="flex h-2 w-2 relative">
+                        <span id="voice-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span id="voice-dot" class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    <span id="voice-status-text">Click Speak to respond</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="voice-listen-btn" onclick="toggleResumeInterviewVoiceListening()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow">
+                        🎤 Start Speaking
+                    </button>
+                    <button id="voice-tts-btn" onclick="toggleResumeInterviewTTS()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold px-3 py-2 rounded-lg transition-colors">
+                        🔊 Read Question Aloud
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-indigo-900/60 border border-indigo-700/50 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">🤖</div>
+                <div class="space-y-3 flex-1">
+                    <p class="text-white font-medium text-lg leading-relaxed" id="ri-question-text">${currentQ}</p>
+                    
+                    <!-- Hint area -->
+                    <div id="ri-hint-area" class="hidden text-slate-400 text-xs italic bg-slate-800/40 border border-slate-700/30 p-3 rounded-lg flex items-center gap-2">
+                        <span>💡</span> <span id="ri-hint-text">Hint goes here...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answer Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Your Answer</h4>
+                    <button onclick="getResumeInterviewHint()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">💡 Get a Hint</button>
+                </div>
+                
+                <textarea id="ri-answer-input" rows="5" placeholder="Type or speak your answer details..."
+                    class="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500 leading-relaxed resize-none"></textarea>
+                
+                <div class="flex items-center justify-between">
+                    <span id="ri-eval-status" class="text-sm text-slate-400 hidden animate-pulse">AI is scoring your response...</span>
+                    <button id="ri-submit-btn" onclick="submitResumeInterviewAnswer('${escapeStr(currentQ)}')"
+                        class="ml-auto bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/30 active:scale-95">
+                        Submit Answer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Evaluation Feedback Display -->
+            <div id="ri-eval-result" class="hidden"></div>
+        </div>`;
+
+        // Automatically read aloud if TTS was previously enabled
+        if (resumeInterviewTtsEnabled) {
+            speakResumeQuestion(currentQ);
+        }
+
+        // Initialize mode based on setting
+        toggleResumeInterviewInputMode(resumeInterviewIsListening ? 'voice' : 'typing');
+
+    } catch(err) {
+        container.innerHTML = `<p class="text-red-400 text-center mt-20">Error loading interview: ${err.message}</p>`;
+    }
+}
+
+// ── Speech / Mode Toggles ─────────────────────────────────
+function toggleResumeInterviewInputMode(mode) {
+    const typingBtn = document.getElementById('mode-typing-btn');
+    const voiceBtn = document.getElementById('mode-voice-btn');
+    const voicePanel = document.getElementById('voice-controls-panel');
+    const answerInput = document.getElementById('ri-answer-input');
+
+    if (!typingBtn || !voiceBtn) return;
+
+    if (mode === 'voice') {
+        typingBtn.className = "px-3.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95";
+        voiceBtn.className = "px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold border border-indigo-500 shadow transition-all active:scale-95";
+        if (voicePanel) voicePanel.classList.remove('hidden');
+        if (answerInput) answerInput.placeholder = "Click 'Start Speaking' and state your response clearly...";
+    } else {
+        stopResumeInterviewVoiceListening();
+        typingBtn.className = "px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold border border-indigo-500 shadow transition-all active:scale-95";
+        voiceBtn.className = "px-3.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95";
+        if (voicePanel) voicePanel.classList.add('hidden');
+        if (answerInput) answerInput.placeholder = "Type your detailed answer here...";
+    }
+}
+
+function toggleResumeInterviewVoiceListening() {
+    const listenBtn = document.getElementById('voice-listen-btn');
+    const statusText = document.getElementById('voice-status-text');
+    const pulse = document.getElementById('voice-pulse');
+    const dot = document.getElementById('voice-dot');
+    
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showToast('Speech recognition not supported in this browser.', 'warning'); return; }
+
+    if (resumeInterviewIsListening) {
+        stopResumeInterviewVoiceListening();
+    } else {
+        resumeInterviewIsListening = true;
+        resumeInterviewVoiceRecognition = new SR();
+        resumeInterviewVoiceRecognition.continuous = false;
+        resumeInterviewVoiceRecognition.interimResults = true;
+        resumeInterviewVoiceRecognition.lang = 'en-US';
+
+        if (listenBtn) {
+            listenBtn.innerHTML = `⏹ Stop Listening`;
+            listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+            listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
+        }
+        if (statusText) statusText.textContent = "Listening... Speak clearly into your mic";
+        if (pulse) pulse.classList.replace('bg-indigo-400', 'bg-red-400');
+        if (dot) dot.classList.replace('bg-indigo-500', 'bg-red-500');
+
+        resumeInterviewVoiceRecognition.onresult = (e) => {
+            const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+            const answerInput = document.getElementById('ri-answer-input');
+            if (answerInput) answerInput.value = transcript;
+        };
+
+        resumeInterviewVoiceRecognition.onend = () => {
+            stopResumeInterviewVoiceListening();
+        };
+
+        resumeInterviewVoiceRecognition.onerror = () => {
+            stopResumeInterviewVoiceListening();
+            showToast('Voice input error occurred.', 'error');
+        };
+
+        resumeInterviewVoiceRecognition.start();
+    }
+}
+
+function stopResumeInterviewVoiceListening() {
+    resumeInterviewIsListening = false;
+    const listenBtn = document.getElementById('voice-listen-btn');
+    const statusText = document.getElementById('voice-status-text');
+    const pulse = document.getElementById('voice-pulse');
+    const dot = document.getElementById('voice-dot');
+
+    if (listenBtn) {
+        listenBtn.innerHTML = `🎤 Start Speaking`;
+        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+        listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
+    }
+    if (statusText) statusText.textContent = "Click Start Speaking to respond";
+    if (pulse) pulse.classList.replace('bg-red-400', 'bg-indigo-400');
+    if (dot) dot.classList.replace('bg-red-500', 'bg-indigo-500');
+
+    if (resumeInterviewVoiceRecognition) {
+        try { resumeInterviewVoiceRecognition.stop(); } catch(_) {}
+        resumeInterviewVoiceRecognition = null;
+    }
+}
+
+function toggleResumeInterviewTTS() {
+    const qText = document.getElementById('ri-question-text')?.textContent;
+    const ttsBtn = document.getElementById('voice-tts-btn');
+    
+    if (!qText) return;
+
+    if (resumeInterviewTtsEnabled) {
+        resumeInterviewTtsEnabled = false;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (ttsBtn) {
+            ttsBtn.innerHTML = `🔊 Read Question Aloud`;
+            ttsBtn.classList.replace('bg-indigo-900/40', 'bg-slate-800');
+            ttsBtn.classList.replace('text-indigo-300', 'text-slate-300');
+        }
+    } else {
+        resumeInterviewTtsEnabled = true;
+        speakResumeQuestion(qText);
+        if (ttsBtn) {
+            ttsBtn.innerHTML = `🔇 Stop Reading`;
+            ttsBtn.classList.replace('bg-slate-800', 'bg-indigo-900/40');
+            ttsBtn.classList.replace('text-slate-300', 'text-indigo-300');
+        }
+    }
+}
+
+function speakResumeQuestion(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // Cancel current speaking
+    const clean = text.replace(/[^\w\s\?\,\.\-]/g, '');
+    const utterance = new SpeechSynthesisUtterance(clean.slice(0, 300));
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;
+    
+    utterance.onend = () => {
+        const isVoiceMode = document.getElementById('mode-voice-btn')?.classList.contains('bg-indigo-600');
+        if (isVoiceMode && !resumeInterviewIsListening) {
+            toggleResumeInterviewVoiceListening();
+        }
+    };
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+// ── Hint System ──────────────────────────────────────────
+async function getResumeInterviewHint() {
+    const hintEl = document.getElementById('ri-hint-area');
+    const hintText = document.getElementById('ri-hint-text');
+    if (!hintEl || !hintText) return;
+    
+    hintText.textContent = "Loading hint...";
+    hintEl.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/session/${resumeInterviewSession.session_id}/hint`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await parseJSON(res);
+        if (!res.ok) throw new Error(data.error || "Failed to load hint");
+        hintText.textContent = data.hint || "Elaborate further on implementation details.";
+    } catch(err) {
+        hintText.textContent = "Elaborate further on technical details and configurations.";
+    }
+}
+
+// ── Submit Answer ────────────────────────────────────────
+async function submitResumeInterviewAnswer(question) {
+    const answerEl = document.getElementById('ri-answer-input');
+    const answer = answerEl ? answerEl.value.trim() : '';
+    if (!answer) { showToast('Please write or speak an answer before submitting.', 'warning'); return; }
+
+    const submitBtn = document.getElementById('ri-submit-btn');
+    const statusEl = document.getElementById('ri-eval-status');
+    
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Evaluating...'; }
+    if (statusEl) statusEl.classList.remove('hidden');
+    if (window.speechSynthesis) window.speechSynthesis.cancel(); // Stop talking on submit
+
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/session/${resumeInterviewSession.session_id}/submit-answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ answer })
+        });
+        const data = await parseJSON(res);
+        if (statusEl) statusEl.classList.add('hidden');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Answer'; }
+        if (!res.ok) throw new Error(data.error || "Evaluation failed");
+
+        // Render response details inside the result panel
+        const evalResult = document.getElementById('ri-eval-result');
+        const evaluation = data.evaluation || {};
+        const score = evaluation.score || 0;
+        const scoreColor = score >= 75 ? 'text-green-400' : score >= 50 ? 'text-yellow-400' : 'text-red-400';
+        
+        evalResult.classList.remove('hidden');
+        evalResult.innerHTML = `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom duration-300">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h4 class="font-bold text-white text-base">Question Answer Score</h4>
+                <span class="${scoreColor} font-black text-2xl">${score}<span class="text-xs text-slate-500">/100</span></span>
+            </div>
+
+            <!-- Breakdown Dimensions -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Tech Accuracy</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.technical_accuracy || 0}%</p>
+                </div>
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Confidence</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.confidence || 0}%</p>
+                </div>
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Communication</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.communication || 0}%</p>
+                </div>
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Problem Solving</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.problem_solving || 0}%</p>
+                </div>
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Explanation Quality</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.explanation_quality || 0}%</p>
+                </div>
+                <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-500 uppercase font-bold">Practical Tech</p>
+                    <p class="text-white font-black text-sm mt-0.5">${evaluation.practical_knowledge || 0}%</p>
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div class="space-y-2">
+                <p class="text-xs text-slate-500 font-bold uppercase">AI Evaluator Feedback</p>
+                <p class="text-slate-200 text-sm leading-relaxed">${evaluation.feedback || 'No feedback'}</p>
+            </div>
+
+            <!-- Next navigation -->
+            <div class="flex justify-end pt-2 border-t border-slate-800">
+                ${data.is_complete
+                    ? `<button onclick="completeResumeInterview()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-95">Finish & View Report</button>`
+                    : `<button onclick="renderResumeInterviewFlow()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95">
+                        ${data.followup_triggered ? 'Next: Answer Follow-up →' : 'Next Question →'}
+                       </button>`
+                }
+            </div>
+        </div>`;
+
+        // Hide main answer input buttons to prevent duplicate submission
+        if (submitBtn) submitBtn.closest('div.flex').innerHTML = '';
+        if (answerEl) answerEl.disabled = true;
+
+    } catch(err) {
+        if (statusEl) statusEl.classList.add('hidden');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Answer'; }
+        showToast(err.message, 'error');
+    }
+}
+
+// ── Complete & Report ─────────────────────────────────────
+async function completeResumeInterview() {
+    if (resumeInterviewTimer) {
+        clearInterval(resumeInterviewTimer);
+        resumeInterviewTimer = null;
+    }
+    
+    showLoader();
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/session/${resumeInterviewSession.session_id}/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ duration_seconds: resumeInterviewDurationSeconds })
+        });
+        const data = await parseJSON(res);
+        if (!res.ok) throw new Error(data.error || "Failed to finalize session");
+        
+        // Show report
+        renderResumeInterviewReport(resumeInterviewSession.session_id);
+    } catch(err) {
+        showToast(err.message, 'error');
+        renderDashboard();
+    }
+}
+
+async function renderResumeInterviewReport(sessionId) {
+    setActiveNav('dashboard');
+    showLoader();
+    
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/report/${sessionId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const report = await parseJSON(res);
+        if (!res.ok) throw new Error(report.error || "Failed to fetch report");
+        
+        const overall = report.overall_score || 0;
+        const oColor = overall >= 75 ? 'text-green-400' : overall >= 50 ? 'text-yellow-400' : 'text-red-400';
+        const circumference = 251.2;
+        const dashOffset = circumference - (overall / 100) * circumference;
+
+        const durationMinutes = Math.floor(report.duration_seconds / 60);
+        const durationSeconds = report.duration_seconds % 60;
+        const dateStr = new Date(report.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        const qaFeedHtml = report.questions.map((q, i) => {
+            const ans = report.answers[i] || 'No answer submitted';
+            const score = report.evaluations[i]?.score || 0;
+            const evalFeedback = report.evaluations[i]?.feedback || 'N/A';
+            const scoreColor = score >= 75 ? 'text-green-400' : score >= 50 ? 'text-yellow-400' : 'text-red-400';
+            
+            return `
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-indigo-400 font-bold uppercase">Turn ${i+1}</span>
+                    <span class="${scoreColor} font-black text-sm">Score: ${score}/100</span>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-xs text-slate-500 font-bold">Interviewer Question</p>
+                    <p class="text-white text-sm leading-relaxed">${q}</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-xs text-slate-500 font-bold">Your Response</p>
+                    <p class="text-slate-300 text-sm leading-relaxed">${ans}</p>
+                </div>
+                <div class="space-y-1 border-t border-slate-700/50 pt-2">
+                    <p class="text-xs text-slate-500 font-bold">AI Analysis</p>
+                    <p class="text-slate-400 text-xs leading-relaxed">${evalFeedback}</p>
+                </div>
+            </div>`;
+        }).join('');
+
+        const container = document.getElementById('app-container');
+        container.innerHTML = `
+        <div class="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
+            <!-- Header -->
+            <div class="border-b border-slate-800 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-white">Interview Performance Evaluation</h1>
+                    <p class="text-slate-400 mt-1">Completed on ${dateStr} · Duration: ${durationMinutes}m ${durationSeconds}s</p>
+                </div>
+                <button onclick="renderDashboard()" class="bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all">
+                    Return to Dashboard
+                </button>
+            </div>
+
+            <!-- Hero Score Box -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-850 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col lg:flex-row items-center gap-8 shadow-xl">
+                <!-- Circular Chart -->
+                <div class="relative w-40 h-40 flex-shrink-0">
+                    <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" stroke-width="10"/>
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="${overall >= 75 ? '#22c55e' : '#eab308'}" stroke-width="10"
+                            stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+                            stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="font-black text-4xl ${oColor}">${overall.toFixed(0)}</span>
+                        <span class="text-slate-500 text-xs font-bold uppercase tracking-wider">Overall</span>
+                    </div>
+                </div>
+
+                <div class="flex-1 text-center lg:text-left space-y-2">
+                    <h3 class="text-2xl font-black text-white">Resume-Based Performance</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        This evaluation is based on technical depth, accuracy, communication, and confidence displayed during the interview based strictly on your resume profile: <b>${report.resume_name}</b>.
+                    </p>
+                </div>
+
+                <!-- Summary Scores -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 flex-shrink-0 w-full lg:w-auto">
+                    ${[
+                        ['Technical Score', report.technical_score, 'text-blue-400'],
+                        ['Communication', report.communication_score, 'text-green-400'],
+                        ['Confidence', report.confidence_score, 'text-yellow-400'],
+                        ['Project Knowledge', report.project_knowledge, 'text-purple-400'],
+                        ['Coding Readiness', report.coding_readiness, 'text-cyan-400']
+                    ].map(([l, v, c]) => `
+                    <div class="bg-slate-800/50 rounded-xl p-3 text-center border border-slate-700/50">
+                        <p class="text-xl font-black ${c}">${v?.toFixed(0) || 0}</p>
+                        <p class="text-slate-500 text-[10px] uppercase font-bold mt-0.5">${l}</p>
+                    </div>`).join('')}
+                </div>
+            </div>
+
+            <!-- Strengths and Weaknesses -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Strengths -->
+                <div class="bg-slate-900 border border-green-800/40 rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-lg mb-4 flex items-center gap-2">🟢 Identified Strengths</h3>
+                    <ul class="space-y-2.5">
+                        ${report.strong_areas.map(s => `
+                        <li class="text-sm text-slate-300 flex items-start gap-2.5">
+                            <span class="text-green-400 flex-shrink-0 mt-0.5">✓</span>
+                            <span>${s}</span>
+                        </li>`).join('') || '<p class="text-slate-500 text-sm">None identified</p>'}
+                    </ul>
+                </div>
+
+                <!-- Weaknesses -->
+                <div class="bg-slate-900 border border-red-800/40 rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-lg mb-4 flex items-center gap-2">🔴 Areas of Improvement</h3>
+                    <ul class="space-y-2.5">
+                        ${report.weak_areas.map(w => `
+                        <li class="text-sm text-slate-300 flex items-start gap-2.5">
+                            <span class="text-red-400 flex-shrink-0 mt-0.5">→</span>
+                            <span>${w}</span>
+                        </li>`).join('') || '<p class="text-slate-500 text-sm">None identified</p>'}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h3 class="font-bold text-white text-lg mb-4 flex items-center gap-2">💡 Recommended Steps for Improvement</h3>
+                <ul class="space-y-3">
+                    ${report.suggestions.map((s, idx) => `
+                    <li class="flex items-start gap-3 bg-yellow-900/10 border border-yellow-800/20 rounded-xl p-3.5">
+                        <span class="w-5 h-5 rounded-full bg-yellow-600/40 text-yellow-400 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">${idx+1}</span>
+                        <p class="text-slate-300 text-sm leading-relaxed">${s}</p>
+                    </li>`).join('') || '<p class="text-slate-500 text-sm">No suggestions provided</p>'}
+                </ul>
+            </div>
+
+            <!-- Dialogue History -->
+            <div class="space-y-4">
+                <h3 class="font-bold text-white text-xl">Interview Transcript & Evaluation</h3>
+                <div class="space-y-4">${qaFeedHtml}</div>
+            </div>
+        </div>`;
+
+    } catch(err) {
+        showToast(err.message, 'error');
+        renderDashboard();
+    }
+}
+
+// ── Render Interview History ──────────────────────────────
+async function renderResumeInterviewHistory() {
+    setActiveNav('dashboard');
+    showLoader();
+    const container = document.getElementById('app-container');
+
+    try {
+        const res = await fetch(`${API_BASE}/resume-interview/history`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await parseJSON(res);
+        if (!res.ok) throw new Error(data.error || "Failed to load history");
+
+        const history = data.history || [];
+        
+        let rowsHtml = '';
+        if (history.length === 0) {
+            rowsHtml = `<tr><td colspan="6" class="p-10 text-center text-slate-500">No previous resume-based interviews found. Start your first session!</td></tr>`;
+        } else {
+            rowsHtml = history.map(h => {
+                const sc = h.overall_score || 0;
+                const scoreColor = sc >= 75 ? 'text-green-400' : sc >= 50 ? 'text-yellow-400' : 'text-red-400';
+                const date = new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                const mins = Math.floor(h.duration_seconds / 60);
+                const secs = h.duration_seconds % 60;
+                
+                return `
+                <tr class="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
+                    <td class="px-5 py-4"><span class="text-slate-200 text-sm font-semibold">${h.resume_name}</span></td>
+                    <td class="px-5 py-4 text-center"><span class="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-full font-bold">${h.difficulty}</span></td>
+                    <td class="px-5 py-4 text-center"><span class="${scoreColor} font-black text-sm">${sc.toFixed(0)}/100</span></td>
+                    <td class="px-5 py-4 text-center text-slate-400 text-xs">${mins}m ${secs}s</td>
+                    <td class="px-5 py-4 text-center text-slate-500 text-xs">${date}</td>
+                    <td class="px-5 py-4 text-center">
+                        <button onclick="renderResumeInterviewReport(${h.id})" class="text-xs text-blue-400 hover:text-blue-300 font-bold transition-colors">View Report</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        container.innerHTML = `
+        <div class="w-full max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
+            <div class="border-b border-slate-800 pb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-white">Resume Interview History</h2>
+                    <p class="text-slate-400 mt-1">Review performance evaluations of your past resume-based sessions.</p>
+                </div>
+                <button onclick="renderDashboard()" class="text-slate-400 hover:text-white text-sm font-semibold">
+                    ← Back to Dashboard
+                </button>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[650px]">
+                    <thead>
+                        <tr class="bg-slate-800/60 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                            <th class="px-5 py-4">Resume File</th>
+                            <th class="px-5 py-4 text-center">Difficulty</th>
+                            <th class="px-5 py-4 text-center">Overall Score</th>
+                            <th class="px-5 py-4 text-center">Duration</th>
+                            <th class="px-5 py-4 text-center">Date</th>
+                            <th class="px-5 py-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+    } catch(err) {
+        showToast(err.message, 'error');
+        renderDashboard();
+    }
 }
 
 // ════════════════════════════════════════════════════════════
 //   END AI CAREER ASSISTANT MODULE
 // ════════════════════════════════════════════════════════════
+

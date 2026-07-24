@@ -250,98 +250,219 @@
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.41.0/min/vs' } });
     </script>
     <script src="js/app.js"></script>
+    <script src="js/chatbot.js"></script>
 
-    <!-- ═══ AI CAREER ASSISTANT CHATBOT WIDGET ═══ -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!--   AI CAREER ASSISTANT — PREMIUM CHATBOT WIDGET         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <div id="chat-widget" class="auth-required" style="display:none">
 
-        <!-- Floating Trigger Button -->
-        <button id="chat-fab" onclick="toggleChat()"
-            title="AI Career Assistant"
-            class="fixed bottom-6 right-6 z-[100] w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-2xl shadow-indigo-500/40 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group">
+        <!-- ── Floating Action Button (60 × 60) ──────────────── -->
+        <button id="chat-fab" onclick="toggleChat()" title="AI Career Assistant"
+            class="fixed z-[100] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
+            style="bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;
+                   background:linear-gradient(135deg,#4f46e5,#7c3aed);
+                   box-shadow:0 8px 32px rgba(79,70,229,0.5),0 0 0 1px rgba(255,255,255,0.06);">
+
+            <!-- Pulse ring (shown only on unread via JS) -->
+            <span id="chat-pulse-ring"
+                class="hidden absolute inset-0 rounded-full"
+                style="background:rgba(99,102,241,0.4);"></span>
+
+            <!-- Notification dot -->
+            <span id="chat-notify"
+                class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-950
+                       bg-red-500 flex items-center justify-center text-[9px] text-white font-bold">
+            </span>
+
+            <!-- Icon (toggled by app.js) -->
             <div id="chat-fab-icon" class="transition-all duration-300">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                         d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                 </svg>
             </div>
-            <!-- Pulse ring -->
-            <span class="absolute inset-0 rounded-full bg-indigo-500/30 animate-ping opacity-75"></span>
-            <!-- Notification dot -->
-            <span id="chat-notify" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 hidden"></span>
         </button>
 
-        <!-- Chat Panel -->
+        <!-- ── Chat Panel (360 × 520 desktop) ────────────────── -->
         <div id="chat-panel"
-            class="fixed bottom-28 right-6 z-[99] w-[380px] max-h-[600px] bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right scale-0 opacity-0 pointer-events-none">
+            class="fixed z-[99] flex flex-col overflow-hidden origin-bottom-right scale-0 opacity-0 pointer-events-none"
+            style="right:24px;bottom:96px;width:360px;height:520px;border-radius:20px;
+                   background:rgba(8,13,30,0.93);
+                   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+                   border:1px solid rgba(99,102,241,0.22);
+                   box-shadow:0 32px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04),inset 0 1px 0 rgba(255,255,255,0.06);">
 
-            <!-- Header -->
-            <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur border-b border-white/10">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">🤖</div>
+            <!-- ── Header ──────────────────────────────────────── -->
+            <div id="chat-header"
+                class="flex items-center justify-between px-4 py-3 flex-shrink-0"
+                style="background:linear-gradient(135deg,rgba(67,56,202,0.95),rgba(109,40,217,0.95));
+                       border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                        style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);">🤖</div>
                     <div>
-                        <p class="text-white font-bold text-sm">AI Career Mentor</p>
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                            <p class="text-white/70 text-[11px]">Online · Powered by Gemini</p>
+                        <p class="text-white font-bold text-sm leading-tight">AI Career Assistant</p>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="chat-online-dot w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                            <p class="text-white/65 text-[10px]">Online · Gemini AI</p>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="clearChatHistory()" title="Clear conversation"
-                        class="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs">
-                        🗑️
+                <div class="flex items-center gap-0.5">
+                    <!-- Settings -->
+                    <button id="chat-settings-btn" onclick="toggleChatSettings()" title="Settings"
+                        class="p-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/10 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
                     </button>
+                    <!-- Clear -->
+                    <button onclick="clearChatHistory()" title="Clear conversation"
+                        class="p-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/10 transition-colors text-xs">🗑️</button>
+                    <!-- Minimize -->
+                    <button onclick="minimizeChat()" title="Minimize"
+                        class="p-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/10 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/>
+                        </svg>
+                    </button>
+                    <!-- Close -->
                     <button onclick="toggleChat()" title="Close"
-                        class="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="p-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/10 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Settings Panel (hidden by default) ─────────── -->
+            <div id="chat-settings-panel" class="hidden flex-shrink-0 px-4 py-3"
+                style="background:rgba(10,14,28,0.95);border-bottom:1px solid rgba(99,102,241,0.14);">
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-3">Settings</p>
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-300 text-xs">🔊 Text-to-Speech</span>
+                        <button id="tts-toggle" onclick="toggleTTS()" class="relative w-9 h-5 rounded-full transition-colors" style="background:#334155;">
+                            <span id="tts-knob" class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-300 text-xs">📐 Compact Mode</span>
+                        <button id="compact-toggle" onclick="toggleCompactMode()" class="relative w-9 h-5 rounded-full transition-colors" style="background:#334155;">
+                            <span id="compact-knob" class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Messages ────────────────────────────────────── -->
+            <div id="chat-messages"
+                class="flex-1 overflow-y-auto p-3 space-y-3 scroll-smooth"
+                style="scrollbar-width:thin;scrollbar-color:#2d3748 transparent;">
+            </div>
+
+            <!-- ── Typing indicator ───────────────────────────── -->
+            <div id="chat-typing" class="px-3 pb-2 hidden flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0"
+                        style="background:rgba(79,70,229,0.25);border:1px solid rgba(99,102,241,0.3);">🤖</div>
+                    <div class="px-3 py-2 rounded-2xl rounded-bl-sm flex items-center gap-1"
+                        style="background:rgba(22,32,55,0.8);border:1px solid rgba(99,102,241,0.18);">
+                        <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                        <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                        <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Suggestions ────────────────────────────────── -->
+            <div id="chat-suggestions" class="px-3 pb-1 hidden flex-shrink-0">
+                <p class="text-slate-600 text-[10px] uppercase tracking-widest font-bold mb-1.5">Suggested</p>
+                <div id="chat-suggestion-list" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <!-- ── Quick Action Chips ─────────────────────────── -->
+            <div class="px-3 pb-2 flex-shrink-0">
+                <div id="chat-quick-chips" class="flex gap-1.5 flex-wrap"></div>
+            </div>
+
+            <!-- ── Drag-and-Drop Overlay ──────────────────────── -->
+            <div id="chat-dropzone"
+                class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center"
+                style="border-radius:20px;background:rgba(79,70,229,0.12);
+                       backdrop-filter:blur(6px);border:2px dashed rgba(99,102,241,0.55);">
+                <div class="text-5xl mb-3">📄</div>
+                <p class="text-indigo-300 font-semibold text-sm">Drop your Resume here</p>
+                <p class="text-indigo-400/60 text-xs mt-1">PDF · DOC · TXT supported</p>
+            </div>
+
+            <!-- ── Input Area ─────────────────────────────────── -->
+            <div class="flex-shrink-0 p-3"
+                style="border-top:1px solid rgba(99,102,241,0.13);background:rgba(8,13,30,0.8);">
+
+                <!-- Hidden file input -->
+                <input type="file" id="chat-file-input" accept=".pdf,.doc,.docx,.txt"
+                    class="hidden" onchange="handleChatFileUpload(event)">
+
+                <!-- Upload indicator -->
+                <div id="chat-upload-indicator" class="hidden mb-2 flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                    style="background:rgba(79,70,229,0.14);border:1px solid rgba(99,102,241,0.25);">
+                    <span class="text-sm flex-shrink-0">📄</span>
+                    <span id="chat-upload-name" class="text-indigo-300 text-xs flex-1 truncate"></span>
+                    <button onclick="removeChatUpload()" class="text-slate-500 hover:text-red-400 transition-colors flex-shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
-            </div>
 
-            <!-- Messages -->
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[400px] scroll-smooth"
-                style="scrollbar-width:thin;scrollbar-color:#334155 transparent">
-                <!-- Messages injected by JS -->
-            </div>
+                <div class="flex items-end gap-2">
+                    <!-- Voice button -->
+                    <button id="chat-voice-btn" onclick="toggleVoiceInput()" title="Voice Input"
+                        class="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                        style="background:rgba(22,32,55,0.85);border:1px solid rgba(99,102,241,0.2);">
+                        <svg id="chat-voice-icon" class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </button>
 
-            <!-- Suggested Questions (shown when empty) -->
-            <div id="chat-suggestions" class="px-4 pb-2 hidden">
-                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-2">Suggested</p>
-                <div id="chat-suggestion-list" class="flex flex-wrap gap-1.5"></div>
-            </div>
+                    <!-- Upload / Attach button -->
+                    <button onclick="document.getElementById('chat-file-input').click()" title="Attach Resume / PDF"
+                        class="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                        style="background:rgba(22,32,55,0.85);border:1px solid rgba(99,102,241,0.2);">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                        </svg>
+                    </button>
 
-            <!-- Typing indicator -->
-            <div id="chat-typing" class="px-4 pb-2 hidden">
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-indigo-900/60 border border-indigo-700/50 flex items-center justify-center text-xs">🤖</div>
-                    <div class="bg-slate-800 border border-slate-700 rounded-2xl rounded-bl-sm px-3 py-2 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
-                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
-                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input area -->
-            <div class="p-3 border-t border-slate-700/60 bg-slate-900">
-                <div class="flex gap-2">
+                    <!-- Textarea (auto-expand, max 5 lines) -->
                     <textarea id="chat-input"
-                        placeholder="Ask me anything about your career..."
+                        placeholder="Ask anything about your career…"
                         rows="1"
                         onkeydown="handleChatKey(event)"
                         oninput="autoResizeChatInput(this)"
-                        class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all max-h-[120px] overflow-y-auto"
-                        style="scrollbar-width:none"></textarea>
-                    <button id="chat-send-btn" onclick="sendChatMessage()"
-                        class="w-10 h-10 mt-0.5 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        class="flex-1 text-sm resize-none"
+                        style="max-height:100px;scrollbar-width:none;"></textarea>
+
+                    <!-- Send button -->
+                    <button id="chat-send-btn" onclick="sendChatMessage()" title="Send"
+                        class="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);
+                               box-shadow:0 4px 14px rgba(79,70,229,0.4);">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
                     </button>
                 </div>
-                <p class="text-slate-600 text-[10px] mt-1.5 text-center">AI may make mistakes. Verify important information.</p>
+
+                <p class="text-slate-700 text-[10px] mt-1.5 text-center">AI may make mistakes · Verify important info</p>
             </div>
         </div>
     </div>

@@ -77,6 +77,18 @@ Upload a **PDF or DOCX** resume and receive a full ATS analysis:
 
 ---
 
+### 📄 Resume-Based Dynamic Interview (Adaptive & Voice Enabled)
+
+A premium, highly realistic interview mode mimicking top-tier company recruiters:
+- 📊 **Adaptive Difficulty**: Determines candidate experience level (Fresh Graduate -> Easy, Internship -> Medium, Experienced -> Advanced) and adapts complexity.
+- 🎯 **Targeted Questioning**: Generates 5 main questions customized to the candidate's exact projects, databases, frameworks, and listed certifications.
+- 🔁 **Dynamic Follow-Up (Context-Aware)**: Uses conversation memory to ask deep follow-up questions if an answer is incomplete, or pivots to test scaling/trade-offs.
+- 🎙️ **Voice I/O & Text Mode**: Speak answers using Web Speech API or type them.
+- 📈 **6-Dimensional Evaluation**: Scores and gives feedback on Technical Accuracy, Communication, Confidence, Problem Solving, Explanation Quality, and Practical Knowledge.
+- 📥 **Interactive Report Cards**: Radar charts, performance metrics, and a transcript feed with custom hints.
+
+---
+
 ### 🤖 AI Career Assistant (Floating Chatbot)
 
 A context-aware AI mentor available on every page via a **floating purple button** (bottom-right corner). Backed by Google Gemini with full user profile injection.
@@ -279,6 +291,13 @@ http://localhost:8000
 | GET | `/api/chat/suggestions` | Get suggested questions |
 | GET | `/api/leaderboard` | Global leaderboard |
 | GET | `/api/roadmap/` | Learning roadmap steps |
+| **POST** | `/api/resume-interview/upload` | Start dynamic resume interview by uploading resume |
+| **GET** | `/api/resume-interview/session/<id>` | Retrieve active resume interview session state |
+| **POST** | `/api/resume-interview/session/<id>/submit-answer` | Submit answer (evaluates & asks follow-up or main question) |
+| **GET** | `/api/resume-interview/session/<id>/hint` | Retrieve guiding hint for current question |
+| **POST** | `/api/resume-interview/session/<id>/complete` | Finalize session and aggregate multi-dimension scores |
+| **GET** | `/api/resume-interview/report/<id>` | Retrieve detailed performance report card |
+| **GET** | `/api/resume-interview/history` | Retrieve past resume-based interview sessions |
 
 > All endpoints except `/api/auth/*` require a valid JWT `Authorization: Bearer <token>` header.
 
@@ -290,6 +309,7 @@ http://localhost:8000
 |-------|-------|-------------|
 | `User` | `users` | Auth, stats, streaks |
 | `ResumeData` | `resume_data` | Full ATS analysis (32 columns) |
+| `ResumeInterviewSession` | `resume_interview_sessions` | Dynamic resume interview session and evaluations |
 | `InterviewSession` | `interview_sessions` | Session tracking |
 | `RoundResult` | `round_results` | Per-round scores |
 | `ChatMessage` | `chat_messages` | AI chatbot history |

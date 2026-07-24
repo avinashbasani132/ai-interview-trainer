@@ -10,6 +10,7 @@ personalized, context-aware career guidance responses.
 import json
 import logging
 import os
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -166,14 +167,16 @@ def build_user_context(user_id: int) -> str:
         return "User profile temporarily unavailable."
 
 
-def generate_chat_response(user_message: str, user_id: int, chat_history: list) -> str:
+def generate_chat_response(user_message: str, user_id: int, chat_history: list,
+                           extra_context: Optional[dict] = None) -> str:
     """
     Generates a context-aware AI response using Gemini.
 
     Args:
-        user_message: The user's current message
-        user_id: DB user ID for context fetching
-        chat_history: List of {'role': 'user'/'assistant', 'content': str} dicts (recent)
+        user_message:  The user's current message
+        user_id:       DB user ID for context fetching
+        chat_history:  List of {'role': 'user'/'assistant', 'content': str} dicts (recent)
+        extra_context: Optional dict with resume_text/resume_name/ats_score from frontend
 
     Returns:
         str: The AI assistant's response text
@@ -184,8 +187,21 @@ def generate_chat_response(user_message: str, user_id: int, chat_history: list) 
         if not ai_service.client:
             return _fallback_response(user_message)
 
-        # Build context
+        # Build context from DB
         user_context = build_user_context(user_id)
+
+        # Append any file-based resume context passed from the frontend
+        if extra_context:
+            extra_parts = []
+            if extra_context.get('resume_name'):
+                extra_parts.append(f"\n**ATTACHED FILE IN CHAT:** {extra_context['resume_name']}")
+            if extra_context.get('ats_score') is not None:
+                extra_parts.append(f"- ATS Score (from frontend): {extra_context['ats_score']}")
+            if extra_context.get('resume_text'):
+                snippet = extra_context['resume_text'][:3000]
+                extra_parts.append(f"- Resume Text Snippet:\n```\n{snippet}\n```")
+            if extra_parts:
+                user_context += "\n" + "\n".join(extra_parts)
 
         # Inject context into system prompt
         system = SYSTEM_PROMPT.format(user_context=user_context)
@@ -211,6 +227,7 @@ def generate_chat_response(user_message: str, user_id: int, chat_history: list) 
     except Exception as e:
         logger.error(f"Chatbot response generation error: {e}")
         return _fallback_response(user_message)
+
 
 
 def _fallback_response(message: str) -> str:

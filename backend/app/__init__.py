@@ -32,6 +32,7 @@ def create_app(config_name="dev"):
     from app.routes.auth import auth_bp
     from app.routes.resume import resume_bp
     from app.routes.interview import interview_bp
+    from app.routes.resume_interview import resume_interview_bp
     from app.routes.user import user_bp
     from app.routes.media import media_bp
     from app.routes.company import company_bp
@@ -44,6 +45,8 @@ def create_app(config_name="dev"):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(resume_bp, url_prefix='/api/resume')
     app.register_blueprint(interview_bp, url_prefix='/api/interview')
+    app.register_blueprint(resume_interview_bp, url_prefix='/api/resume-interview')
+
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(media_bp, url_prefix='/api/media')
     app.register_blueprint(dsa_bp, url_prefix='/api/dsa')

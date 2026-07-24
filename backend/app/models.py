@@ -240,3 +240,35 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(20), nullable=False)    # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ResumeInterviewSession(db.Model):
+    __tablename__ = 'resume_interview_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    resume_name = db.Column(db.String(255), nullable=False)
+    extracted_details = db.Column(db.Text, nullable=False)  # JSON string of Name, Education, Skills, Projects, etc.
+    analysis_json = db.Column(db.Text, nullable=False)      # JSON string of Resume Analysis
+    plan_json = db.Column(db.Text, nullable=False)          # JSON string of planned questions
+    difficulty_level = db.Column(db.String(50), nullable=False) # Easy (Graduate), Medium (Internship), Advanced (Experienced)
+    
+    # State tracking
+    current_question_idx = db.Column(db.Integer, default=0)
+    questions_asked = db.Column(db.Text, default='[]')      # JSON list of asked questions (including follow-ups)
+    answers_submitted = db.Column(db.Text, default='[]')    # JSON list of user answers
+    scores_per_question = db.Column(db.Text, default='[]')  # JSON list of per-question score evaluations
+    
+    # Results
+    status = db.Column(db.String(50), default='in_progress') # in_progress, completed
+    duration_seconds = db.Column(db.Integer, default=0)
+    overall_score = db.Column(db.Float, default=0.0)
+    technical_score = db.Column(db.Float, default=0.0)
+    communication_score = db.Column(db.Float, default=0.0)
+    confidence_score = db.Column(db.Float, default=0.0)
+    project_knowledge_score = db.Column(db.Float, default=0.0)
+    coding_readiness_score = db.Column(db.Float, default=0.0)
+    weak_areas = db.Column(db.Text, default='[]')           # JSON list
+    strong_areas = db.Column(db.Text, default='[]')         # JSON list
+    improvement_suggestions = db.Column(db.Text, default='[]') # JSON list
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+

@@ -32,6 +32,8 @@ def send_message():
     """
     Accepts a user message, builds context from DB, calls AI, saves both
     user message and assistant reply, returns the AI response.
+    Optionally accepts resume_text/ats_score from chatbot.js file upload
+    to provide context-aware answers even before DB resume is available.
     """
     user_id = int(get_jwt_identity())
     data = request.get_json(silent=True)
@@ -46,6 +48,15 @@ def send_message():
     if len(user_message) > MAX_MESSAGE_LENGTH:
         return jsonify({"error": f"Message too long. Max {MAX_MESSAGE_LENGTH} characters."}), 400
 
+    # Optional resume context passed from frontend (Step 7 – resume integration)
+    extra_context = {}
+    if data.get('resume_text'):
+        extra_context['resume_text'] = str(data['resume_text'])[:8000]  # cap size
+    if data.get('resume_name'):
+        extra_context['resume_name'] = str(data['resume_name'])
+    if data.get('ats_score') is not None:
+        extra_context['ats_score'] = data['ats_score']
+
     # Fetch recent history for AI context
     try:
         recent = ChatMessage.query.filter_by(user_id=user_id)\
@@ -58,7 +69,7 @@ def send_message():
 
     # Generate AI response
     try:
-        ai_response = generate_chat_response(user_message, user_id, history)
+        ai_response = generate_chat_response(user_message, user_id, history, extra_context)
     except Exception as e:
         logger.error(f"AI generation error: {e}")
         return jsonify({"error": "AI service unavailable. Please try again."}), 503
@@ -80,6 +91,7 @@ def send_message():
         "response": ai_response,
         "role": "assistant"
     }), 200
+
 
 
 # ── GET /api/chat/history ─────────────────────────────────────────────────────
