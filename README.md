@@ -28,7 +28,8 @@
 
 **AI Interview Trainer** is a comprehensive career preparation platform built for students and professionals targeting software engineering roles. It combines:
 
-- 🎯 **4-stage interview simulation** (Aptitude → Technical AI → Coding → HR Video)
+- 🏢 **Company-Based Placement Engine** — simulating 5-round recruitment cycles of 33 MNCs and Startups with dynamic follow-up dialogs and real-time evaluation.
+- 🎯 **Career-Path interview simulation** (Aptitude → Technical AI → Coding → HR Video)
 - 📄 **Professional ATS Resume Analyzer** with deterministic scoring
 - 🤖 **Floating AI Career Chatbot** powered by Google Gemini
 - 📊 **ML-powered readiness prediction** and performance analytics
@@ -86,6 +87,22 @@ A premium, highly realistic interview mode mimicking top-tier company recruiters
 - 🎙️ **Voice I/O & Text Mode**: Speak answers using Web Speech API or type them.
 - 📈 **6-Dimensional Evaluation**: Scores and gives feedback on Technical Accuracy, Communication, Confidence, Problem Solving, Explanation Quality, and Practical Knowledge.
 - 📥 **Interactive Report Cards**: Radar charts, performance metrics, and a transcript feed with custom hints.
+
+---
+
+### 🏢 Company-Based Placement Assessment (MNC Interview Simulator)
+
+Practice interviews simulating the official recruitment processes of **33 top MNCs, Services, and Tech Startups** (Google, Microsoft, Amazon, Zoho, Flipkart, TCS, Infosys, Paytm, Swiggy, etc.):
+- 📂 **Selection Process Simulation**: Adapts to the target company's specific hiring style (Product-based vs. Service-based vs. Startup).
+- 🛠️ **Configurable Setup**: Choose from **17 software engineering roles** and multiple difficulty levels.
+- 📝 **Structured 5-Round Sequence**:
+  1. *Aptitude Screening*: Quantitative, logical reasoning, and cognitive assessments.
+  2. *Technical MCQ Assessment*: Core CS fundamentals, OS, DBMS, networks, and language-specific checks.
+  3. *Monaco Coding Round*: Live algorithmic problem solving with multiple language choices.
+  4. *Technical AI (Conversational)*: Dynamic, turn-based question flow with context-aware Gemini follow-ups.
+  5. *HR Behavioral Round*: Leadership alignment and cultural fit dialogs.
+- 🔊 **Voice I/O & TTS**: Built-in speech synthesis and text-to-speech transcription (STT).
+- 📜 **Verification Certificates**: Complete overall assessments with $\ge 70\%$ to earn a digital signature verified accomplishment certificate.
 
 ---
 
@@ -183,36 +200,34 @@ A context-aware AI mentor available on every page via a **floating purple button
 ```
 ai-interview-trainer/
 ├── backend/
-│   ├── app/
-│   │   ├── __init__.py          # Flask app factory + blueprint registry
-│   │   ├── models.py            # SQLAlchemy models (User, Resume, Chat, etc.)
-│   │   ├── core/
-│   │   │   └── config.py        # Environment configuration
-│   │   ├── routes/
-│   │   │   ├── auth.py          # /api/auth  — Login, Register
-│   │   │   ├── user.py          # /api/user  — Dashboard, Analytics
-│   │   │   ├── resume.py        # /api/resume — Upload, History, Report
-│   │   │   ├── interview.py     # /api/interview — Rounds, Evaluation
-│   │   │   ├── arena.py         # /api/code  — Code Execution
-│   │   │   ├── chatbot.py       # /api/chat  — AI Career Assistant
-│   │   │   ├── community.py     # /api/community — Posts
-│   │   │   ├── roadmap.py       # /api/roadmap — Learning steps
-│   │   │   └── leaderboard.py   # /api/leaderboard
-│   │   └── services/
-│   │       ├── ai_service.py        # Gemini AI wrapper
-│   │       ├── ats_analyzer.py      # 24-step ATS analysis engine
-│   │       ├── chatbot_service.py   # Context-aware chatbot service
-│   │       ├── docx_parser.py       # PDF/DOCX text extraction
-│   │       ├── ml_prediction.py     # Readiness score ML model
-│   │       └── dsa_service.py       # DSA problem service
-│   ├── instance/
-│   │   └── dev.db               # SQLite database (auto-created)
-│   ├── manage.py                # Application entry point
-│   └── requirements.txt
-└── frontend/
-    ├── index.html               # Single Page Application shell
-    └── js/
-        └── app.js               # Complete SPA logic (~2900 lines)
+│   ├── app.py                   # Flask app factory, config & redirects
+│   ├── config.py                # Configuration environments settings
+│   ├── models/                  # SQLAlchemy DB models (user, interview, company, etc.)
+│   ├── routes/                  # Modular Blueprint routers
+│   │   ├── auth.py              # User signup, log in, logging out
+│   │   ├── company.py           # Company lists, session details, round submissions
+│   │   ├── certificate.py       # Verification certificates builder
+│   │   ├── user.py              # Dashboard analytics & user settings
+│   │   ├── resume.py            # Resume uploading & ATS reports
+│   │   ├── interview.py         # Standard Career Path interview rounds
+│   │   ├── resume_interview.py  # Interactive Resume-based adaptive interview
+│   │   ├── arena.py             # Compiler execute engine
+│   │   ├── chatbot.py           # Context-aware AI chatbot assistant
+│   │   ├── community.py         # Discussion boards
+│   │   ├── roadmap.py           # Custom learning tracks
+│   │   └── leaderboard.py       # Global readiness rankings
+│   ├── services/                # Backend system engines
+│   │   ├── ai_service.py        # Gemini API connectors & fallbacks
+│   │   ├── ats_analyzer.py      # Resume ATS pipeline parser
+│   │   ├── certificate_service.py # ReportLab PDF certificates generator
+│   │   └── chatbot_service.py   # Dynamic context builder for chatbot
+│   ├── static/                  # Shared client resources & JS SPA modules
+│   ├── templates/               # Client-side single page template elements
+│   ├── scripts/                 # DB migrations & seeding scripts
+│   ├── tests/                   # Master test suite
+│   ├── requirements.txt         # Server system packages
+│   └── instance/                # DB cache & SQLite instances
+└── frontend/                    # Legacy static site resources
 ```
 
 ---
@@ -298,6 +313,16 @@ http://localhost:8000
 | **POST** | `/api/resume-interview/session/<id>/complete` | Finalize session and aggregate multi-dimension scores |
 | **GET** | `/api/resume-interview/report/<id>` | Retrieve detailed performance report card |
 | **GET** | `/api/resume-interview/history` | Retrieve past resume-based interview sessions |
+| **GET** | `/api/company/list` | Fetch all 33 configured companies with round setups |
+| **POST** | `/api/company/start` | Start placement assessment session |
+| **GET** | `/api/company/session/<id>/state` | Fetch current session status & round info |
+| **GET** | `/api/company/session/<id>/round/<round>/questions` | Fetch questions generated for the active round |
+| **POST** | `/api/company/session/<id>/submit-answers` | Submit round responses and fetch evaluations / follow-up AI turns |
+| **GET** | `/api/company/session/<id>/summary` | Fetch final report card summary |
+| **POST** | `/api/certificate/generate` | Generate verification certificate credentials |
+| **GET** | `/api/certificate/download/<id>` | Download PDF document of verified certificate |
+| **GET** | `/api/certificate/verify/<id>` | Render certificate verification profile publicly |
+| **GET** | `/api/certificate/my-certificates` | Fetch current user's earned credentials |
 
 > All endpoints except `/api/auth/*` require a valid JWT `Authorization: Bearer <token>` header.
 
@@ -308,10 +333,13 @@ http://localhost:8000
 | Model | Table | Description |
 |-------|-------|-------------|
 | `User` | `users` | Auth, stats, streaks |
+| `Company` | `companies` | Seeded company metadata and descriptions |
 | `ResumeData` | `resume_data` | Full ATS analysis (32 columns) |
 | `ResumeInterviewSession` | `resume_interview_sessions` | Dynamic resume interview session and evaluations |
-| `InterviewSession` | `interview_sessions` | Session tracking |
-| `RoundResult` | `round_results` | Per-round scores |
+| `InterviewSession` | `interview_sessions` | Career path & company placement session metadata |
+| `InterviewQuestion` | `interview_questions` | Question data, user answers, options, and scores |
+| `RoundResult` | `round_results` | Per-round performance feedback & score summary |
+| `Certificate` | `certificates` | Generated credential UUIDs, scores, and signatures |
 | `ChatMessage` | `chat_messages` | AI chatbot history |
 | `LearningRoadmap` | `learning_roadmaps` | Step completion |
 | `LearningRecommendation` | `learning_recommendations` | Weak topics |
