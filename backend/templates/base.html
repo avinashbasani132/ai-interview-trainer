@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Trainer</title>
+
+    <!-- Tailwind CSS (CDN for zero-Node.js setup) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Marked.js (Markdown) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Highlight.js (Code syntax) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <!-- Monaco Editor CDN Link -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.41.0/min/vs/loader.min.js"></script>
+    <script>
+        // Configure AMD loader to fetch Monaco from CDN
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.41.0/min/vs' } });
+    </script>
+
+    <!-- Modular CSS Stylesheets -->
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/chatbot.css">
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen flex flex-col items-center">
+
+    <!-- Mobile Header -->
+    {% include 'components/mobile_header.html' %}
+
+    <div class="flex flex-1 w-full overflow-hidden">
+        <!-- Sidebar Navigation -->
+        {% include 'components/sidebar.html' %}
+
+        <!-- Main Content Container -->
+        <main id="app-container" class="flex-1 p-6 lg:p-10 overflow-y-auto">
+            <!-- Views injected here by JS -->
+        </main>
+    </div>
+
+    <!-- AI Career Assistant chatbot widget -->
+    {% include 'chatbot.html' %}
+
+    <!-- Premium Footer -->
+    {% include 'components/footer.html' %}
+
+    <!-- HTML Client Templates for SPA Views -->
+    <template id="template-auth">
+        {% include 'auth.html' %}
+    </template>
+    
+    <template id="template-dashboard">
+        {% include 'dashboard.html' %}
+    </template>
+    
+    <template id="template-profile">
+        {% include 'profile.html' %}
+    </template>
+    
+    <template id="template-history">
+        {% include 'history.html' %}
+    </template>
+    
+    <template id="template-learning">
+        {% include 'learning.html' %}
+    </template>
+    
+    <template id="template-coding">
+        {% include 'coding.html' %}
+    </template>
+    
+    <template id="template-resume">
+        {% include 'resume.html' %}
+    </template>
+    
+    <template id="template-resume-results">
+        {% include 'resume_results.html' %}
+    </template>
+    
+    <template id="template-interview">
+        {% include 'interview.html' %}
+    </template>
+
+    <template id="template-interview-general">
+        {% include 'interview_general.html' %}
+    </template>
+
+    <template id="template-company-interview">
+        {% include 'company_interview.html' %}
+    </template>
+
+    <template id="template-company-interview-run">
+        {% include 'company_interview_run.html' %}
+    </template>
+    
+    <template id="template-leaderboard">
+        {% include 'leaderboard.html' %}
+    </template>
+    
+    <template id="template-certificate">
+        {% include 'certificate.html' %}
+    </template>
+    
+    <template id="template-community">
+        {% include 'community.html' %}
+    </template>
+
+    <!-- Inline Common Utility Scripts -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+        function toggleMap() {
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('light-mode');
+            const isLight = html.classList.contains('light-mode');
+            const text = document.getElementById('theme-text');
+            if (isLight) {
+                text.textContent = 'Dark Mode';
+            } else {
+                text.textContent = 'Light Mode';
+            }
+        }
+    </script>
+
+    <!-- Load Split JS Modules -->
+    <script src="/js/common.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/profile.js"></script>
+    <script src="/js/history.js"></script>
+    <script src="/js/learning.js"></script>
+    <script src="/js/coding.js"></script>
+    <script src="/js/resume.js"></script>
+    <script src="/js/interview.js"></script>
+    <script src="/js/leaderboard.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script src="/js/certificate.js"></script>
+    <script src="/js/community.js"></script>
+</body>
+
+</html>

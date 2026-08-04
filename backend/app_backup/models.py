@@ -40,6 +40,7 @@ class User(db.Model):
     achievements = db.relationship('Achievement', backref='user', lazy=True)
     community_posts = db.relationship('CommunityPost', backref='author', lazy=True)
     community_replies = db.relationship('CommunityReply', backref='author', lazy=True)
+    certificates = db.relationship('Certificate', backref='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -271,4 +272,18 @@ class ResumeInterviewSession(db.Model):
     improvement_suggestions = db.Column(db.Text, default='[]') # JSON list
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Certificate(db.Model):
+    __tablename__ = 'certificates'
+    id = db.Column(db.String(50), primary_key=True)  # AIT-YYYY-XXXXXX
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    interview_id = db.Column(db.Integer, nullable=True)
+    interview_type = db.Column(db.String(50), nullable=False)  # 'Technical', 'HR', 'Resume-Based', 'Full Assessment'
+    overall_score = db.Column(db.Float, nullable=False)
+    completion_date = db.Column(db.DateTime, default=datetime.utcnow)
+    issue_date = db.Column(db.DateTime, default=datetime.utcnow)
+    verification_token = db.Column(db.String(100), unique=True, nullable=False)
+    pdf_path = db.Column(db.String(255), nullable=True)
+
 

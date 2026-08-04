@@ -1,0 +1,20 @@
+<div class="w-full space-y-8 max-w-5xl mx-auto animate-in fade-in duration-500">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-6">
+        <div>
+            <button onclick="renderRounds()" class="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors mb-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Back to Hub
+            </button>
+            <h1 class="text-3xl font-black text-white">General Placement Rounds</h1>
+            <p class="text-slate-400 mt-1">Track your progress through each stage of the standard selection process.</p>
+        </div>
+    </div>
+
+    <!-- Stepper -->
+    <div class="flex items-center gap-0 overflow-x-auto pb-2">
+        ${stepperHtml}
+    </div>
+
+    <!-- Round Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${roundCards}</div>
+</div>

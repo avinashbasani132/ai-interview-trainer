@@ -1,0 +1,110 @@
+<div class="w-full space-y-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-3xl font-extrabold text-white">Dashboard</h2>
+            <p class="text-slate-400 mt-1">${nextStepMessage}</p>
+        </div>
+        <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl">
+            <span class="text-2xl">🔥</span>
+            <div>
+                <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Current Streak</p>
+                <p class="text-xl font-black text-orange-400">${streak} day${streak !== 1 ? 's' : ''}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Readiness -->
+        <div class="md:col-span-2 bg-slate-900 border border-slate-700 p-6 rounded-xl">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold text-white">Job Readiness Score</h3>
+                <span class="text-3xl font-black ${scoreClass}">${score}%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-1000 relative"
+                    style="width:${score}%">
+                    <div class="absolute inset-0 bg-white/20 animate-pulse rounded-full"></div>
+                </div>
+            </div>
+            <div class="flex justify-between mt-2">
+                <p class="text-xs text-slate-500">Round ${currentRound} of 4: ${roundLabel}</p>
+                <p class="text-xs text-slate-500">Stage Progress: ${progressPercentage}%</p>
+            </div>
+        </div>
+        <!-- Stats -->
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl flex flex-col gap-4">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-1">Attempts Left</p>
+                <p class="text-2xl font-bold ${attemptsClass}">${attemptsRemaining}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-1">Weak Topics</p>
+                <p class="text-sm font-medium text-red-300">${weakTopics}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div>
+        <h3 class="text-lg font-bold text-white mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl hover:border-blue-500/60 transition-all cursor-pointer flex justify-between items-center group"
+                onclick="startInterview()">
+                <div>
+                    <h3 class="text-lg font-bold text-blue-400 mb-1 group-hover:text-blue-300">▶ Start Next Round</h3>
+                    <p class="text-slate-400 text-sm">Continue from ${roundLabelNext}</p>
+                </div>
+                <svg class="w-7 h-7 text-blue-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </div>
+            <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl hover:border-purple-500/60 transition-all cursor-pointer relative group"
+                onclick="renderResumePage()">
+                <h3 class="text-lg font-bold text-purple-400 mb-1 group-hover:text-purple-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Resume Analysis
+                </h3>
+                <p class="text-slate-400 text-sm">Upload & get AI-powered feedback on your resume.</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl hover:border-indigo-500/60 transition-all relative group flex flex-col justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-indigo-400 mb-1 flex items-center gap-2">
+                        📝 Resume-Based Interview
+                    </h3>
+                    <p class="text-slate-400 text-sm mb-4">Take an AI interview based on your uploaded resume.</p>
+                </div>
+                <div class="flex flex-col gap-2 w-full mt-auto">
+                    <button onclick="renderResumeInterviewSetup()" class="w-full text-left text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-3 rounded-lg flex justify-between items-center transition-colors">
+                        <span>Upload / Start Interview</span>
+                        <span>➔</span>
+                    </button>
+                    <button onclick="renderResumeInterviewHistory()" class="w-full text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 px-3 rounded-lg flex justify-between items-center transition-colors">
+                        <span>View Previous Reports</span>
+                        <span>➔</span>
+                    </button>
+                </div>
+            </div>
+            ${dsaHtml}
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl">
+        <h3 class="text-lg font-bold text-white mb-3">🏅 Achievements</h3>
+        <div class="flex flex-wrap gap-2">${achievementBadges}</div>
+    </div>
+
+    <!-- Credentials -->
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">🏆 My Credentials</h3>
+            <button onclick="renderCertificates()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider">View All ➔</button>
+        </div>
+        <div id="dashboard-certs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="text-slate-500 text-sm py-2">Loading certificates...</div>
+        </div>
+    </div>
+
+    <!-- Interview Stage (injected by startInterview) -->
+    <div id="interview-stage" class="hidden bg-slate-900 border border-slate-700 rounded-xl p-6"></div>
+</div>

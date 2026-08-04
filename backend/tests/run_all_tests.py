@@ -8,7 +8,7 @@ import io
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from app.models import db, User, InterviewSession, AptitudeQuestion, DSAProblem, ResumeData
+from models import db, User, InterviewSession, AptitudeQuestion, DSAProblem, ResumeData
 
 app = create_app('dev')
 
@@ -52,7 +52,7 @@ def run_integration_tests():
         # Clean up existing test user if any
         user = User.query.filter_by(email=test_email).first()
         if user:
-            from app.models import ResumeInterviewSession, LearningRecommendation
+            from models import ResumeInterviewSession, LearningRecommendation
             InterviewSession.query.filter_by(user_id=user.id).delete()
             ResumeInterviewSession.query.filter_by(user_id=user.id).delete()
             ResumeData.query.filter_by(user_id=user.id).delete()
@@ -90,8 +90,8 @@ def run_integration_tests():
             print("[*] Seeded DSA problem.")
 
         # Mocking extract_text globally for both blueprints
-        with unittest.mock.patch('app.routes.resume.extract_text', return_value=MOCK_RESUME_TEXT), \
-             unittest.mock.patch('app.routes.resume_interview.extract_text', return_value=MOCK_RESUME_TEXT):
+        with unittest.mock.patch('routes.resume.extract_text', return_value=MOCK_RESUME_TEXT), \
+             unittest.mock.patch('routes.resume_interview.extract_text', return_value=MOCK_RESUME_TEXT):
             
             with app.test_client() as client:
                 # ─── 1. REGISTER ───
@@ -239,7 +239,7 @@ def run_integration_tests():
                 user = User.query.filter_by(email=test_email).first()
                 if user:
                     user_id = user.id
-                    from app.models import ResumeInterviewSession, LearningRecommendation
+                    from models import ResumeInterviewSession, LearningRecommendation
                     InterviewSession.query.filter_by(user_id=user_id).delete()
                     ResumeInterviewSession.query.filter_by(user_id=user_id).delete()
                     ResumeData.query.filter_by(user_id=user_id).delete()

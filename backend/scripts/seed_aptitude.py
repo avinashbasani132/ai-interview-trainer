@@ -1,6 +1,7 @@
 import json
 from app import create_app
-from app.models import db, AptitudeQuestion
+from models import db
+from models.aptitude import AptitudeQuestion
 
 app = create_app('dev')
 

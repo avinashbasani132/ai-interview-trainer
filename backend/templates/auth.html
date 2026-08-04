@@ -1,0 +1,30 @@
+<div class="flex flex-col items-center justify-center min-h-screen w-full px-4">
+    <div class="text-center mb-10">
+        <div class="text-5xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent mb-3">Trainer AI</div>
+        <p class="text-slate-400 text-lg">Your AI-Powered Interview Partner</p>
+    </div>
+    <div class="bg-slate-900 border border-slate-700/60 p-8 rounded-2xl shadow-2xl max-w-md w-full backdrop-blur">
+        <h2 class="text-2xl font-bold mb-1 text-center text-white">Welcome Back</h2>
+        <p class="text-slate-500 text-sm text-center mb-6">Login or create an account to begin</p>
+        <input id="email" type="email" placeholder="Email address"
+            class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition">
+        <input id="password" type="password" placeholder="Password"
+            class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-lg mb-5 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition">
+        <div class="flex gap-3">
+            <button onclick="handleAuth('login')"
+                class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-blue-500/30">
+                Login
+            </button>
+            <button onclick="handleAuth('register')"
+                class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white font-semibold py-3 rounded-lg transition-colors">
+                Register
+            </button>
+        </div>
+        <p id="auth-error" class="text-red-400 mt-4 text-sm text-center hidden"></p>
+    </div>
+    <div class="mt-8 flex gap-6 text-slate-500 text-xs">
+        <span>🔒 Secure JWT Auth</span>
+        <span>🤖 Powered by Gemini AI</span>
+        <span>📊 ML Readiness Score</span>
+    </div>
+</div>

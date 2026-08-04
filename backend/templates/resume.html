@@ -1,0 +1,74 @@
+<div class="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-800 pb-8">
+        <div>
+            <h1 class="text-4xl font-black text-white mb-2">Resume ATS Optimizer</h1>
+            <p class="text-slate-400">Professional analysis against 24+ industry standard benchmarks.</p>
+        </div>
+        <div class="flex gap-3">
+            <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex items-center gap-3">
+                <span class="text-2xl">⚡</span>
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Efficiency</p>
+                    <p class="text-sm font-semibold text-white">2.4s Analysis</p>
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex items-center gap-3">
+                <span class="text-2xl">🛡️</span>
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Accuracy</p>
+                    <p class="text-sm font-semibold text-white">99.2% Score</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+            <div id="upload-zone" class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center hover:border-indigo-500 transition-all cursor-pointer group"
+                onclick="document.getElementById('resume-file-input').click()"
+                ondragover="event.preventDefault(); this.classList.add('border-indigo-500')"
+                ondragleave="this.classList.remove('border-indigo-500')"
+                ondrop="handleResumeDrop(event)">
+                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 group-hover:bg-indigo-900 transition-colors">
+                    <svg class="w-8 h-8 text-slate-400 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Upload Resume</h3>
+                <p class="text-slate-400 mb-6 text-sm">PDF or DOCX (Max 10MB)</p>
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-3 rounded-full transition-all shadow-lg hover:shadow-indigo-500/25">Select File</button>
+                <input id="resume-file-input" type="file" class="hidden" accept=".pdf,.docx" onchange="uploadResumeFromPage(event)">
+            </div>
+
+            <div id="resume-upload-status" class="hidden"></div>
+            <div id="resume-results" class="hidden space-y-6"></div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <h3 class="font-bold text-white mb-4">ATS Coverage Overview</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm"><span class="text-slate-400">Parsing Accuracy</span><span class="text-white font-bold">100%</span></div>
+                    <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-indigo-500 w-[100%] h-2 rounded-full"></div></div>
+                    <div class="flex justify-between text-sm"><span class="text-slate-400">Keyword Matching</span><span class="text-white font-bold">94%</span></div>
+                    <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-purple-500 w-[94%] h-2 rounded-full"></div></div>
+                    <div class="flex justify-between text-sm"><span class="text-slate-400">Formatting Score</span><span class="text-white font-bold">88%</span></div>
+                    <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-blue-500 w-[88%] h-2 rounded-full"></div></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <h3 class="font-bold text-white mb-4">Quick Tips</h3>
+                <ul class="space-y-3 text-sm text-slate-400">
+                    <li class="flex gap-2"><span>✅</span> Use standard headers</li>
+                    <li class="flex gap-2"><span>✅</span> Avoid complex graphics</li>
+                    <li class="flex gap-2"><span>✅</span> Keep to 1-2 pages</li>
+                    <li class="flex gap-2"><span>✅</span> Optimize for keywords</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="resume-history-section" class="bg-slate-900 border border-slate-800 rounded-3xl p-8">
+        <h3 class="text-xl font-bold text-white mb-6">Recent Analyses History</h3>
+        <div id="resume-history-list" class="overflow-x-auto"><p class="text-slate-500">Loading your history...</p></div>
+    </div>
+</div>

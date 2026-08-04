@@ -28,6 +28,9 @@ def create_app(config_name="dev"):
     Migrate(app, db)
     JWTManager(app)
 
+    with app.app_context():
+        db.create_all()
+
     # Register Blueprints (Modular Routing)
     from app.routes.auth import auth_bp
     from app.routes.resume import resume_bp
@@ -41,11 +44,13 @@ def create_app(config_name="dev"):
     from app.routes.arena import arena_bp
     from app.routes.dsa import dsa_bp
     from app.routes.chatbot import chatbot_bp
+    from app.routes.certificate import certificate_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(resume_bp, url_prefix='/api/resume')
     app.register_blueprint(interview_bp, url_prefix='/api/interview')
     app.register_blueprint(resume_interview_bp, url_prefix='/api/resume-interview')
+    app.register_blueprint(certificate_bp)
 
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(media_bp, url_prefix='/api/media')

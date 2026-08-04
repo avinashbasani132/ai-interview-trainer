@@ -7,7 +7,7 @@ import unittest.mock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from app.models import db, User, InterviewSession, AptitudeQuestion, RoundResult
+from models import db, User, InterviewSession, AptitudeQuestion, RoundResult
 
 app = create_app('dev')
 

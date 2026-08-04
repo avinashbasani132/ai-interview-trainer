@@ -7,7 +7,7 @@ import unittest.mock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from app.models import db, User, ResumeInterviewSession
+from models import db, User, ResumeInterviewSession
 
 app = create_app('dev')
 
@@ -79,11 +79,11 @@ def run_tests():
         mock_hint = "Think about the request-response cycle in Flask."
 
         # Mock the service methods
-        with unittest.mock.patch('app.routes.resume_interview.ai_service.extract_resume_details_for_interview', return_value=mock_details), \
-             unittest.mock.patch('app.routes.resume_interview.ai_service.generate_resume_interview_plan', return_value=mock_plan), \
-             unittest.mock.patch('app.routes.resume_interview.ai_service.evaluate_resume_answer', return_value=mock_eval), \
-             unittest.mock.patch('app.routes.resume_interview.ai_service.generate_followup_for_answer', return_value=mock_followup), \
-             unittest.mock.patch('app.routes.resume_interview.ai_service.generate_hint_for_question', return_value=mock_hint):
+        with unittest.mock.patch('routes.resume_interview.ai_service.extract_resume_details_for_interview', return_value=mock_details), \
+             unittest.mock.patch('routes.resume_interview.ai_service.generate_resume_interview_plan', return_value=mock_plan), \
+             unittest.mock.patch('routes.resume_interview.ai_service.evaluate_resume_answer', return_value=mock_eval), \
+             unittest.mock.patch('routes.resume_interview.ai_service.generate_followup_for_answer', return_value=mock_followup), \
+             unittest.mock.patch('routes.resume_interview.ai_service.generate_hint_for_question', return_value=mock_hint):
 
             # Test database session creation
             print("[*] Creating a ResumeInterviewSession in DB...")
