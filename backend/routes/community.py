@@ -32,7 +32,7 @@ def create_post():
     if not title or not content:
         return jsonify({"error": "Title and content required"}), 400
         
-    post = CommunityPost(user_id=user_id, title=title, content=content)
+    post = CommunityPost(user_id=user_id, title=title, content=content) # type: ignore
     db.session.add(post)
     db.session.commit()
     return jsonify({"message": "Post created successfully", "post_id": post.id}), 201
@@ -48,7 +48,7 @@ def create_reply():
     if not post_id or not content:
         return jsonify({"error": "Post ID and content required"}), 400
         
-    reply = CommunityReply(user_id=user_id, post_id=post_id, content=content)
+    reply = CommunityReply(user_id=user_id, post_id=post_id, content=content) # type: ignore
     db.session.add(reply)
     db.session.commit()
     return jsonify({"message": "Reply added successfully"}), 201

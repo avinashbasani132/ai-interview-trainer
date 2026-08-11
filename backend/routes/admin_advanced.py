@@ -9,7 +9,7 @@ admin_advanced_bp = Blueprint('admin_advanced', __name__)
 
 def log_admin_action(admin_id, action, target=None, details=None):
     try:
-        log = AdminAuditLog(admin_id=admin_id, action=action, target=target, details=details)
+        log = AdminAuditLog(admin_id=admin_id, action=action, target=target, details=details) # type: ignore
         db.session.add(log)
         db.session.commit()
     except Exception as e:
@@ -101,13 +101,12 @@ def manage_questions():
     if request.method == 'POST':
         data = request.json
         try:
-            q = Question(
-                category=data.get('category', 'Technical'),
-                difficulty=data.get('difficulty', 'Medium'),
-                technology=data.get('technology', ''),
-                question_text=data.get('question_text', ''),
-                expected_answer=data.get('expected_answer', '')
-            )
+            q = Question()
+            q.category = data.get('category', 'Technical')
+            q.difficulty = data.get('difficulty', 'Medium')
+            q.technology = data.get('technology', '')
+            q.question_text = data.get('question_text', '')
+            q.expected_answer = data.get('expected_answer', '')
             db.session.add(q)
             db.session.commit()
             log_admin_action(int(admin_id), "Create Question", f"QID {q.id}")
@@ -131,11 +130,10 @@ def manage_companies():
     if request.method == 'POST':
         data = request.json
         try:
-            c = Company(
-                name=data.get('name'),
-                category=data.get('category', ''),
-                is_active=data.get('is_active', True)
-            )
+            c = Company()
+            c.name = data.get('name')
+            c.category = data.get('category', '')
+            c.is_active = data.get('is_active', True)
             db.session.add(c)
             db.session.commit()
             log_admin_action(int(admin_id), "Create Company", f"Company {c.name}")

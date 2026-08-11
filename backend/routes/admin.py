@@ -74,7 +74,7 @@ def bypass_round():
         # Create a new session specifically for testing this round, or update an existing one
         session = InterviewSession.query.filter_by(user_id=user_id, status='in_progress', is_admin_test=True).first()
         if not session:
-            session = InterviewSession(user_id=user_id, current_round=target_round, attempt_count=1, is_admin_test=True)
+            session = InterviewSession(user_id=user_id, current_round=target_round, attempt_count=1, is_admin_test=True) # type: ignore
             db.session.add(session)
         else:
             session.current_round = target_round

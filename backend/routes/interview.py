@@ -14,7 +14,7 @@ def start_interview():
     user_id = get_jwt_identity()
     
     try:
-        new_session = InterviewSession(user_id=user_id, current_round=1, attempt_count=1)
+        new_session = InterviewSession(user_id=user_id, current_round=1, attempt_count=1) # type: ignore
         db.session.add(new_session)
         db.session.commit()
         return jsonify({"message": "Interview started", "session_id": new_session.id, "round": 1}), 201
@@ -47,12 +47,11 @@ def evaluate_round():
     score = evaluation.get("score", 0)
 
     # 2. Record the result
-    result = RoundResult(
-        session_id=session.id,
-        round_type=round_name,
-        score=score,
-        feedback_json=str(evaluation)
-    )
+    result = RoundResult()
+    result.session_id = session.id
+    result.round_type = round_name
+    result.score = score
+    result.feedback_json = str(evaluation)
     db.session.add(result)
 
     # 3. Elimination and Progression Logic
@@ -117,12 +116,11 @@ def chat_interview():
         evaluation = ai_service.evaluate_answer(current_question, user_answer, round_name)
         
         # Save result
-        result = RoundResult(
-            session_id=session.id,
-            round_type=f"{round_name} - Q{question_count}",
-            score=evaluation.get("score", 0),
-            feedback_json=str(evaluation)
-        )
+        result = RoundResult()
+        result.session_id = session.id
+        result.round_type = f"{round_name} - Q{question_count}"
+        result.score = evaluation.get("score", 0)
+        result.feedback_json = str(evaluation)
         db.session.add(result)
         db.session.commit()
         
@@ -184,7 +182,7 @@ def resume_interview():
 @jwt_required()
 def start_aptitude():
     user_id = get_jwt_identity()
-    new_session = InterviewSession(user_id=user_id, current_round=1, attempt_count=1)
+    new_session = InterviewSession(user_id=user_id, current_round=1, attempt_count=1) # type: ignore
     db.session.add(new_session)
     
     from models import AptitudeQuestion
@@ -263,12 +261,11 @@ def submit_aptitude():
     if user:
         user.readiness_score = (user.readiness_score + score) / 2
         
-    result = RoundResult(
-         session_id=session.id,
-         round_type="MCQ Screening",
-         score=score,
-         feedback_json=feedback
-    )
+    result = RoundResult()
+    result.session_id = session.id
+    result.round_type = "MCQ Screening"
+    result.score = score
+    result.feedback_json = feedback
     db.session.add(result)
     db.session.commit()
     

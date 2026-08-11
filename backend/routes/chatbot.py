@@ -76,8 +76,8 @@ def send_message():
 
     # Save both messages
     try:
-        user_msg = ChatMessage(user_id=user_id, role='user', content=user_message)
-        bot_msg  = ChatMessage(user_id=user_id, role='assistant', content=ai_response)
+        user_msg = ChatMessage(user_id=user_id, role='user', content=user_message) # type: ignore
+        bot_msg  = ChatMessage(user_id=user_id, role='assistant', content=ai_response) # type: ignore
         db.session.add(user_msg)
         db.session.add(bot_msg)
         db.session.commit()

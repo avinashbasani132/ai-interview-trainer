@@ -28,7 +28,7 @@ def register():
         }), 409
         
     try:
-        new_user = User(email=email)
+        new_user = User(email=email) # type: ignore
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
