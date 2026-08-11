@@ -15,6 +15,18 @@ async function renderDashboard() {
         const weakTopics = data.weak_topics && data.weak_topics.length > 0 ? data.weak_topics.join(', ') : 'None identified yet';
         const streak = data.current_streak || 0;
 
+        // Show Admin link if user is admin
+        const adminLink = document.getElementById('nav-admin');
+        if (adminLink) {
+            if (data.is_admin) {
+                adminLink.classList.remove('hidden');
+                adminLink.classList.add('flex');
+            } else {
+                adminLink.classList.add('hidden');
+                adminLink.classList.remove('flex');
+            }
+        }
+
         const roundLabels = ['', 'Aptitude MCQ', 'Technical AI', 'Coding Arena', 'HR Video'];
         const nextStepMessages = [
             '', 'Complete the Aptitude round to unlock Technical.',

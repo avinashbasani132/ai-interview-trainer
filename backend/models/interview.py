@@ -12,6 +12,7 @@ class InterviewSession(db.Model):
     status = db.Column(db.String(50), default='in_progress') # in_progress, completed, failed
     job_role = db.Column(db.String(100), nullable=True, default='Software Engineer')
     difficulty = db.Column(db.String(50), nullable=True, default='Medium')
+    is_admin_test = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     results = db.relationship('RoundResult', backref='session', lazy=True)

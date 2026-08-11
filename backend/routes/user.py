@@ -9,7 +9,7 @@ user_bp = Blueprint('user', __name__)
 @jwt_required()
 def get_dashboard_data():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = User.query.get(int(user_id))
     
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -73,6 +73,7 @@ def get_dashboard_data():
         
         # Profile Fields
         "email": user.email,
+        "is_admin": user.is_admin,
         "total_interviews": user.total_interviews,
         "rounds_cleared": user.rounds_cleared,
         "failed_attempts": user.failed_attempts,
@@ -94,7 +95,7 @@ def get_dashboard_data():
 @jwt_required()
 def get_user_history():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = User.query.get(int(user_id))
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -130,7 +131,7 @@ def get_user_history():
 @jwt_required()
 def get_performance_analytics():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = User.query.get(int(user_id))
     if not user:
         return jsonify({"error": "User not found"}), 404
 

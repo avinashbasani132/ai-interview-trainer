@@ -11,6 +11,7 @@ class Company(db.Model):
     difficulty = db.Column(db.String(50), nullable=True)  # Easy, Medium, Hard
     duration = db.Column(db.String(50), nullable=True)    # e.g., "2.5 Hours"
     rounds_list = db.Column(db.Text, nullable=True)        # JSON string of rounds list
+    is_active = db.Column(db.Boolean, default=True)
     sessions = db.relationship('InterviewSession', backref='company', lazy=True)
 
 class CompanyQuestion(db.Model):

@@ -10,6 +10,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     readiness_score = db.Column(db.Float, default=0.0)
     job_readiness_score = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
     
     # New V3 Tracking Stats
     total_interviews = db.Column(db.Integer, default=0)
@@ -17,6 +19,9 @@ class User(db.Model):
     failed_attempts = db.Column(db.Integer, default=0)
     dsa_problems_solved = db.Column(db.Integer, default=0)
     average_score = db.Column(db.Float, default=0.0)
+
+    # Admin Portal Role
+    is_admin = db.Column(db.Boolean, default=False)
 
     # Streak System
     current_streak = db.Column(db.Integer, default=0)

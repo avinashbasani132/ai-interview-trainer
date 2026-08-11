@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db, User
 from flask_jwt_extended import create_access_token
+from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -67,6 +68,10 @@ def login():
     user = User.query.filter_by(email=email).first()
     
     if user and user.check_password(password):
+        # Update last_login
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
         # Generate new JWT token
         access_token = create_access_token(identity=str(user.id))
         return jsonify({
@@ -74,7 +79,8 @@ def login():
             "message": "Login successful",
             "data": {
                 "access_token": access_token,
-                "user_id": user.id
+                "user_id": user.id,
+                "is_admin": user.is_admin
             }
         }), 200
         

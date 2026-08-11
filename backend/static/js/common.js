@@ -60,7 +60,17 @@ function renderApp() {
         if (footer) footer.style.display = '';
         // ── Show chat widget for authenticated users ────────
         if (chatWidget) chatWidget.style.display = '';
-        renderDashboard();
+        
+        const path = window.location.pathname;
+        if (path === '/admin') {
+            if (typeof renderAdmin === 'function') {
+                renderAdmin();
+            } else {
+                renderDashboard();
+            }
+        } else {
+            renderDashboard();
+        }
     } else {
         if (sidebar) sidebar.classList.add('hidden');
         if (mobileHeader) mobileHeader.classList.add('hidden');
@@ -121,6 +131,41 @@ function renderMarkdown(text) {
         return marked.parse(text);
     }
     return text.replace(/\n/g, '<br>');
+}
+
+// ─── Helper: Full Screen Mode ─────────────────────────────
+function enterFullScreenMode() {
+    const sidebar = document.getElementById('sidebar');
+    const mobileHeader = document.querySelector('header.md\\:hidden');
+    const footer = document.getElementById('app-footer');
+    const chatWidget = document.getElementById('chat-widget');
+    const container = document.getElementById('app-container');
+
+    if (sidebar) sidebar.classList.add('hidden');
+    if (mobileHeader) mobileHeader.classList.add('hidden');
+    if (footer) footer.style.display = 'none';
+    if (chatWidget) chatWidget.style.display = 'none';
+    if (container) {
+        container.classList.remove('p-6', 'lg:p-10');
+        container.classList.add('p-0');
+    }
+}
+
+function exitFullScreenMode() {
+    const sidebar = document.getElementById('sidebar');
+    const mobileHeader = document.querySelector('header.md\\:hidden');
+    const footer = document.getElementById('app-footer');
+    const chatWidget = document.getElementById('chat-widget');
+    const container = document.getElementById('app-container');
+
+    if (sidebar) sidebar.classList.remove('hidden');
+    if (mobileHeader) mobileHeader.classList.remove('hidden');
+    if (footer) footer.style.display = '';
+    if (chatWidget) chatWidget.style.display = '';
+    if (container) {
+        container.classList.remove('p-0');
+        container.classList.add('p-6', 'lg:p-10');
+    }
 }
 
 // Bootstrap

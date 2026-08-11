@@ -3,7 +3,7 @@ import sys
 import json
 import glob
 from pathlib import Path
-import google.generativeai as genai
+from google import genai
 
 # Add backend to sys.path so we can import the app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -26,7 +26,7 @@ def get_notebook_text(filepath):
         print(f"Error reading {filepath}: {e}")
         return ""
 
-def process_file_with_gemini(model, text):
+def process_file_with_gemini(client, text):
     prompt = f"""
     You are an expert technical instructor. Extract programming exercises, problems, or questions from the following lesson material.
     
@@ -51,7 +51,7 @@ def process_file_with_gemini(model, text):
     """
     
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         res_text = response.text.strip()
         if res_text.startswith("```json"): res_text = res_text[7:]
         if res_text.endswith("```"): res_text = res_text[:-3]
@@ -68,8 +68,7 @@ def run_import():
         print("API_KEY is missing in environment variables. Cannot proceed.")
         return
         
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    client = genai.Client(api_key=api_key)
     
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/Data Structures and introduction'))
     notebooks = glob.glob(os.path.join(data_dir, '*.ipynb'))
@@ -84,7 +83,7 @@ def run_import():
             if not text:
                 continue
                 
-            problems = process_file_with_gemini(model, text)
+            problems = process_file_with_gemini(client, text)
             print(f"Found {len(problems)} problems in {os.path.basename(nb)}.")
             
             for p in problems:

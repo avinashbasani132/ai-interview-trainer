@@ -54,12 +54,16 @@ def create_app(config_name="dev"):
     from routes.dsa import dsa_bp
     from routes.chatbot import chatbot_bp
     from routes.certificate import certificate_bp
+    from routes.admin import admin_bp
+    from routes.admin_advanced import admin_advanced_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(resume_bp, url_prefix='/api/resume')
     app.register_blueprint(interview_bp, url_prefix='/api/interview')
     app.register_blueprint(resume_interview_bp, url_prefix='/api/resume-interview')
     app.register_blueprint(certificate_bp)
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(admin_advanced_bp, url_prefix='/api/admin')
 
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(media_bp, url_prefix='/api/media')
@@ -101,6 +105,7 @@ def create_app(config_name="dev"):
     @app.route('/login', methods=['GET'])
     @app.route('/register', methods=['GET'])
     @app.route('/dashboard', methods=['GET'])
+    @app.route('/admin', methods=['GET'])
     def spa_redirect():
         return render_template('base.html')
 

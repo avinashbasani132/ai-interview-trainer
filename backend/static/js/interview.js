@@ -12,15 +12,27 @@ let resumeInterviewIsListening = false;
 let resumeInterviewVoiceRecognition = null;
 
 // ─── Helper: full-page interview stage ───────────────────────
+function exitInterviewMode() {
+    if(!confirm("Are you sure you want to quit this interview session? Progress might be lost.")) return;
+    exitFullScreenMode();
+    renderDashboard();
+}
+
 function getInterviewStage() {
+    enterFullScreenMode();
     const container = document.getElementById('app-container');
     container.innerHTML = `
-    <div class="w-full space-y-4">
-        <button onclick="renderDashboard()" class="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors mb-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            Back to Dashboard
-        </button>
-        <div id="interview-stage" class="bg-slate-900 border border-slate-700 rounded-2xl p-6 md:p-8"></div>
+    <div class="w-full h-full flex flex-col bg-slate-950">
+        <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900">
+            <h2 class="text-white font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                AI Interview Hub
+            </h2>
+            <button onclick="exitInterviewMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-4 py-2 rounded-lg transition-colors border border-slate-700">
+                Quit Session
+            </button>
+        </div>
+        <div id="interview-stage" class="flex-1 overflow-y-auto p-6 md:p-10"></div>
     </div>`;
     return document.getElementById('interview-stage');
 }
@@ -2044,6 +2056,7 @@ async function renderCompanyInterviewRun(sessionId) {
         });
 
         // Initialize template layout from template-company-interview-run script
+        enterFullScreenMode();
         container.innerHTML = renderTemplate('template-company-interview-run');
 
         // Start timer
@@ -2055,6 +2068,13 @@ async function renderCompanyInterviewRun(sessionId) {
         showToast(err.message, 'error');
         renderCompanyInterviewHub();
     }
+}
+
+function quitInterviewRun() {
+    if(!confirm("Are you sure you want to quit this session? Progress might be lost.")) return;
+    clearInterval(companyState.timerInterval);
+    exitFullScreenMode();
+    renderCompanyInterviewHub();
 }
 
 // Timer helpers

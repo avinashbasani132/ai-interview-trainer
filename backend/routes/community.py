@@ -14,7 +14,7 @@ def get_posts():
             "id": p.id,
             "title": p.title,
             "content": p.content,
-            "author": p.author.username or f"User {p.user_id}",
+            "author": p.author.username if (p.author and p.author.username) else f"User {p.user_id}",
             "upvotes": p.upvotes,
             "created_at": p.created_at.isoformat(),
             "replies_count": len(p.replies)
@@ -62,7 +62,7 @@ def get_replies(post_id):
         res.append({
             "id": r.id,
             "content": r.content,
-            "author": r.author.username or f"User {r.user_id}",
+            "author": r.author.username if (r.author and r.author.username) else f"User {r.user_id}",
             "created_at": r.created_at.isoformat()
         })
     return jsonify({"replies": res}), 200

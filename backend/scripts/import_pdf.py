@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import PyPDF2
-import google.generativeai as genai
+from google import genai
 
 # Add backend to sys.path so we can import the app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

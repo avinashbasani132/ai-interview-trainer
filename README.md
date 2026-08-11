@@ -167,6 +167,15 @@ A context-aware AI mentor available on every page via a **floating purple button
 
 ---
 
+### 🛡️ Secure Admin Portal
+
+- **QA Test Mode**: Isolated interview testing mode that doesn't corrupt production analytics
+- **Placement Question Structure**: Built-in syllabus and question structure reference for interviewers
+- **Data Management**: Live statistics, user analytics, and verifiable certificates management
+- **Role-Based Security**: Strictly secured with backend JWT validation and DB-level role checks
+
+---
+
 ## 🛠️ Technology Stack
 
 ### Backend
@@ -284,6 +293,13 @@ http://localhost:8000
 ```
 
 > The Flask server serves `frontend/index.html` as a static SPA. No separate frontend server is needed.
+
+### 6. Production Deployment
+To run the application in a secure, production-ready environment using `Waitress` (WSGI):
+```bash
+python manage.py --mode prod --port 8000
+```
+This mode is optimized for concurrent connections and disables debug features.
 
 ---
 
