@@ -19,12 +19,13 @@ def parse_args():
         help="Run mode: 'dev' for local testing or 'prod' for secure deployment."
     )
     
-    # Ensure port is an integer
+    import os
+    # Ensure port is an integer and reads from environment (needed for Render)
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port to run the application on (default: 8000)."
+        default=int(os.environ.get("PORT", 8000)),
+        help="Port to run the application on (default: 8000 or $PORT)."
     )
     
     return parser.parse_args()
