@@ -6,7 +6,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from models import db, ResumeInterviewSession, User, ResumeData
+from models import ResumeInterviewSession, User, ResumeData
 from services.docx_parser import extract_text
 from services.ai_service import ai_service
 
@@ -108,11 +108,10 @@ def upload_resume_for_interview():
             scores_per_question=json.dumps([]),
             status='in_progress'
         )
-        db.session.add(new_session)
-        db.session.commit()
+        new_session.save()
 
         return jsonify({
-            "session_id": new_session.id,
+            "session_id": str(new_session.id),
             "resume_name": filename,
             "difficulty": difficulty,
             "experience_level": details.get("experience_level", "Fresh Graduate"),
@@ -122,7 +121,6 @@ def upload_resume_for_interview():
         }), 201
 
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Failed to start resume interview: {e}")
         return jsonify({"error": "Failed to generate interview plan. Please try again."}), 500
 
@@ -140,7 +138,7 @@ def start_interview_with_existing_resume():
     if not resume_id:
         return jsonify({"error": "Missing resume_id"}), 400
 
-    resume = ResumeData.query.filter_by(id=resume_id, user_id=user_id).first()
+    resume = ResumeData.objects(id=resume_id, user_id=user_id).first()
     if not resume:
         return jsonify({"error": "Resume not found"}), 404
 
@@ -164,11 +162,10 @@ def start_interview_with_existing_resume():
             scores_per_question=json.dumps([]),
             status='in_progress'
         )
-        db.session.add(new_session)
-        db.session.commit()
+        new_session.save()
 
         return jsonify({
-            "session_id": new_session.id,
+            "session_id": str(new_session.id),
             "resume_name": resume.filename,
             "difficulty": difficulty,
             "experience_level": details.get("experience_level", "Fresh Graduate"),
@@ -178,21 +175,20 @@ def start_interview_with_existing_resume():
         }), 201
 
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Failed to start existing resume interview: {e}")
         return jsonify({"error": "Failed to create session with selected resume."}), 500
 
 
-@resume_interview_bp.route('/session/<int:session_id>', methods=['GET'])
+@resume_interview_bp.route('/session/<string:session_id>', methods=['GET'])
 @jwt_required()
 def get_session_state(session_id):
     user_id = get_jwt_identity()
-    session = ResumeInterviewSession.query.filter_by(id=session_id, user_id=user_id).first()
+    session = ResumeInterviewSession.objects(id=session_id, user_id=user_id).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
     return jsonify({
-        "id": session.id,
+        "id": str(session.id),
         "resume_name": session.resume_name,
         "difficulty": session.difficulty_level,
         "current_question_idx": session.current_question_idx,
@@ -204,7 +200,7 @@ def get_session_state(session_id):
     }), 200
 
 
-@resume_interview_bp.route('/session/<int:session_id>/submit-answer', methods=['POST'])
+@resume_interview_bp.route('/session/<string:session_id>/submit-answer', methods=['POST'])
 @jwt_required()
 def submit_answer(session_id):
     """
@@ -218,7 +214,7 @@ def submit_answer(session_id):
     if not answer:
         return jsonify({"error": "Answer cannot be empty."}), 400
 
-    session = ResumeInterviewSession.query.filter_by(id=session_id, user_id=user_id).first()
+    session = ResumeInterviewSession.objects(id=session_id, user_id=user_id).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
     if session.status != 'in_progress':
@@ -277,7 +273,7 @@ def submit_answer(session_id):
             else:
                 is_complete = True
 
-        db.session.commit()
+        session.save()
 
         return jsonify({
             "evaluation": evaluation,
@@ -288,19 +284,18 @@ def submit_answer(session_id):
         }), 200
 
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Answer submission failed: {e}")
         return jsonify({"error": "Failed to process answer evaluation."}), 500
 
 
-@resume_interview_bp.route('/session/<int:session_id>/hint', methods=['GET'])
+@resume_interview_bp.route('/session/<string:session_id>/hint', methods=['GET'])
 @jwt_required()
 def get_hint(session_id):
     """
     Generates a subtle, guiding hint for the current question without giving away the full answer.
     """
     user_id = get_jwt_identity()
-    session = ResumeInterviewSession.query.filter_by(id=session_id, user_id=user_id).first()
+    session = ResumeInterviewSession.objects(id=session_id, user_id=user_id).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
@@ -316,7 +311,7 @@ def get_hint(session_id):
         return jsonify({"hint": "Try describing your experience or project implementation step-by-step."}), 200
 
 
-@resume_interview_bp.route('/session/<int:session_id>/complete', methods=['POST'])
+@resume_interview_bp.route('/session/<string:session_id>/complete', methods=['POST'])
 @jwt_required()
 def complete_interview(session_id):
     """
@@ -326,7 +321,7 @@ def complete_interview(session_id):
     data = request.get_json(silent=True) or {}
     duration = data.get('duration_seconds', 0)
 
-    session = ResumeInterviewSession.query.filter_by(id=session_id, user_id=user_id).first()
+    session = ResumeInterviewSession.objects(id=session_id, user_id=user_id).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
@@ -371,13 +366,13 @@ def complete_interview(session_id):
         session.weak_areas = json.dumps(list(set(all_weaknesses))[:5])
         session.improvement_suggestions = json.dumps(list(set(all_recommendations))[:5])
 
-        db.session.commit()
+        session.save()
 
         # Update global user readiness score
-        user = User.query.get(user_id)
+        user = User.objects(id=user_id).first()
         if user:
             user.readiness_score = (user.readiness_score + session.overall_score) / 2
-            db.session.commit()
+            user.save()
 
         return jsonify({
             "message": "Interview completed successfully",
@@ -393,7 +388,6 @@ def complete_interview(session_id):
         }), 200
 
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Session completion failed: {e}")
         return jsonify({"error": "Failed to complete interview session."}), 500
 
@@ -405,10 +399,10 @@ def get_interview_history():
     Returns list of all past resume-based interview sessions for the logged-in user.
     """
     user_id = get_jwt_identity()
-    sessions = ResumeInterviewSession.query.filter_by(user_id=user_id, status='completed').order_by(ResumeInterviewSession.created_at.desc()).all()
+    sessions = ResumeInterviewSession.objects(user_id=user_id, status='completed').order_by('-created_at')
 
     history = [{
-        "id": s.id,
+        "id": str(s.id),
         "resume_name": s.resume_name,
         "difficulty": s.difficulty_level,
         "overall_score": s.overall_score,
@@ -420,19 +414,19 @@ def get_interview_history():
     return jsonify({"history": history}), 200
 
 
-@resume_interview_bp.route('/report/<int:session_id>', methods=['GET'])
+@resume_interview_bp.route('/report/<string:session_id>', methods=['GET'])
 @jwt_required()
 def get_interview_report(session_id):
     """
     Returns detailed feedback report of a completed resume-based interview session.
     """
     user_id = get_jwt_identity()
-    session = ResumeInterviewSession.query.filter_by(id=session_id, user_id=user_id).first()
+    session = ResumeInterviewSession.objects(id=session_id, user_id=user_id).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
     return jsonify({
-        "id": session.id,
+        "id": str(session.id),
         "resume_name": session.resume_name,
         "difficulty": session.difficulty_level,
         "overall_score": session.overall_score,

@@ -1,14 +1,17 @@
 from datetime import datetime
 from models import db
 
-class Certificate(db.Model):
-    __tablename__ = 'certificates'
-    id = db.Column(db.String(50), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    interview_id = db.Column(db.Integer, nullable=True)
-    interview_type = db.Column(db.String(50), nullable=False)  # 'Technical', 'HR', 'Resume-Based', 'Full Assessment'
-    overall_score = db.Column(db.Float, nullable=False)
-    completion_date = db.Column(db.DateTime, default=datetime.utcnow)
-    issue_date = db.Column(db.DateTime, default=datetime.utcnow)
-    verification_token = db.Column(db.String(100), unique=True, nullable=False)
-    pdf_path = db.Column(db.String(255), nullable=True)
+
+class Certificate(db.Document):
+    meta = {'collection': 'certificates', 'indexes': ['user_id', 'verification_token']}
+
+    certificate_id = db.StringField(primary_key=True)  # e.g. AIT-2026-000001
+    user_id = db.StringField(required=True)
+    interview_id = db.StringField()
+    interview_type = db.StringField(required=True)  # 'Technical', 'HR', 'Resume-Based', 'Full Assessment'
+    overall_score = db.FloatField(required=True)
+    completion_date = db.DateTimeField(default=datetime.utcnow)
+    issue_date = db.DateTimeField(default=datetime.utcnow)
+    verification_token = db.StringField(unique=True, required=True)
+    pdf_path = db.StringField()
+    candidate_name = db.StringField()

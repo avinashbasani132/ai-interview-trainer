@@ -1,11 +1,13 @@
+# NOTE: The canonical requirements.txt for Render deployment is at the REPO ROOT (../requirements.txt).
+# This file is for local backend-only development reference.
 Flask>=3.0.2
 gunicorn>=21.2.0
 waitress>=3.0.0
 python-dotenv>=1.0.1
 bandit>=1.7.7
 pylint>=3.0.3
-Flask-SQLAlchemy>=3.1.1
-Flask-Migrate>=4.0.5
+Flask-MongoEngine>=1.0.0
+pymongo[srv]>=4.6.0
 Flask-CORS>=4.0.0
 Flask-JWT-Extended>=4.6.0
 bcrypt>=4.1.2
@@ -13,3 +15,4 @@ PyPDF2>=3.0.1
 google-genai>=1.0.0
 python-docx>=1.1.0
 reportlab>=4.0.0
+requests>=2.31.0

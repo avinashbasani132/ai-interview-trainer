@@ -1,70 +1,72 @@
 from datetime import datetime
 from models import db
 
-class InterviewSession(db.Model):
-    __tablename__ = 'interview_sessions'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    resume_id = db.Column(db.Integer, db.ForeignKey('resume_data.id'), nullable=True) 
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=True)
-    current_round = db.Column(db.Integer, default=1) # 1: MCQ, 2: Tech, 3: HR, 4: Coding
-    attempt_count = db.Column(db.Integer, default=1)
-    status = db.Column(db.String(50), default='in_progress') # in_progress, completed, failed
-    job_role = db.Column(db.String(100), nullable=True, default='Software Engineer')
-    difficulty = db.Column(db.String(50), nullable=True, default='Medium')
-    is_admin_test = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    results = db.relationship('RoundResult', backref='session', lazy=True)
 
-class RoundResult(db.Model):
-    __tablename__ = 'round_results'
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('interview_sessions.id'), nullable=False)
-    round_type = db.Column(db.String(50), nullable=False)
-    score = db.Column(db.Float, nullable=False)
-    feedback_json = db.Column(db.Text, nullable=True) 
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+class InterviewSession(db.Document):
+    meta = {'collection': 'interview_sessions', 'indexes': ['user_id']}
 
-class InterviewQuestion(db.Model):
-    __tablename__ = 'interview_questions'
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('interview_sessions.id'), nullable=False)
-    round_type = db.Column(db.String(50), nullable=False)
-    question_text = db.Column(db.Text, nullable=False)
-    options_json = db.Column(db.Text, nullable=True) 
-    user_answer = db.Column(db.Text, nullable=True)
-    ai_feedback = db.Column(db.Text, nullable=True) 
-    score = db.Column(db.Float, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.StringField(required=True)
+    resume_id = db.StringField()
+    company_id = db.StringField()
+    current_round = db.IntField(default=1)   # 1: MCQ, 2: Tech, 3: HR, 4: Coding
+    attempt_count = db.IntField(default=1)
+    status = db.StringField(default='in_progress')  # in_progress, completed, failed
+    job_role = db.StringField(default='Software Engineer')
+    difficulty = db.StringField(default='Medium')
+    is_admin_test = db.BooleanField(default=False)
+    created_at = db.DateTimeField(default=datetime.utcnow)
 
-class ResumeInterviewSession(db.Model):
-    __tablename__ = 'resume_interview_sessions'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    resume_name = db.Column(db.String(255), nullable=False)
-    extracted_details = db.Column(db.Text, nullable=False)  # JSON string
-    analysis_json = db.Column(db.Text, nullable=False)      # JSON string
-    plan_json = db.Column(db.Text, nullable=False)          # JSON string
-    difficulty_level = db.Column(db.String(50), nullable=False)
-    
+
+class RoundResult(db.Document):
+    meta = {'collection': 'round_results', 'indexes': ['session_id']}
+
+    session_id = db.StringField(required=True)
+    round_type = db.StringField(required=True)
+    score = db.FloatField(required=True)
+    feedback_json = db.StringField()
+    timestamp = db.DateTimeField(default=datetime.utcnow)
+
+
+class InterviewQuestion(db.Document):
+    meta = {'collection': 'interview_questions', 'indexes': ['session_id']}
+
+    session_id = db.StringField(required=True)
+    round_type = db.StringField(required=True)
+    question_text = db.StringField(required=True)
+    options_json = db.StringField()
+    user_answer = db.StringField()
+    ai_feedback = db.StringField()
+    score = db.FloatField()
+    created_at = db.DateTimeField(default=datetime.utcnow)
+
+
+class ResumeInterviewSession(db.Document):
+    meta = {'collection': 'resume_interview_sessions', 'indexes': ['user_id']}
+
+    user_id = db.StringField(required=True)
+    resume_name = db.StringField(required=True)
+    extracted_details = db.StringField(required=True)  # JSON string
+    analysis_json = db.StringField(required=True)       # JSON string
+    plan_json = db.StringField(required=True)           # JSON string
+    difficulty_level = db.StringField(required=True)
+
     # State tracking
-    current_question_idx = db.Column(db.Integer, default=0)
-    questions_asked = db.Column(db.Text, default='[]')      # JSON list
-    answers_submitted = db.Column(db.Text, default='[]')    # JSON list
-    scores_per_question = db.Column(db.Text, default='[]')  # JSON list
-    
+    current_question_idx = db.IntField(default=0)
+    questions_asked = db.StringField(default='[]')      # JSON list
+    answers_submitted = db.StringField(default='[]')    # JSON list
+    scores_per_question = db.StringField(default='[]')  # JSON list
+
     # Results
-    status = db.Column(db.String(50), default='in_progress')
-    duration_seconds = db.Column(db.Integer, default=0)
-    overall_score = db.Column(db.Float, default=0.0)
-    technical_score = db.Column(db.Float, default=0.0)
-    communication_score = db.Column(db.Float, default=0.0)
-    confidence_score = db.Column(db.Float, default=0.0)
-    project_knowledge_score = db.Column(db.Float, default=0.0)
-    coding_readiness_score = db.Column(db.Float, default=0.0)
-    weak_areas = db.Column(db.Text, default='[]')           # JSON list
-    strong_areas = db.Column(db.Text, default='[]')         # JSON list
-    improvement_suggestions = db.Column(db.Text, default='[]') # JSON list
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.StringField(default='in_progress')
+    duration_seconds = db.IntField(default=0)
+    overall_score = db.FloatField(default=0.0)
+    technical_score = db.FloatField(default=0.0)
+    communication_score = db.FloatField(default=0.0)
+    confidence_score = db.FloatField(default=0.0)
+    project_knowledge_score = db.FloatField(default=0.0)
+    coding_readiness_score = db.FloatField(default=0.0)
+    weak_areas = db.StringField(default='[]')           # JSON list
+    strong_areas = db.StringField(default='[]')         # JSON list
+    improvement_suggestions = db.StringField(default='[]')  # JSON list
+
+    created_at = db.DateTimeField(default=datetime.utcnow)

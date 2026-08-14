@@ -1,1 +1,4 @@
-web: gunicorn "app:create_app()"
+# NOTE: The canonical Procfile for Render deployment is at the REPO ROOT (../Procfile).
+# This file is kept only as a local reference.
+# Root Procfile command:
+#   web: gunicorn --chdir backend "app:create_app()" --bind 0.0.0.0:$PORT --workers 2 --timeout 120

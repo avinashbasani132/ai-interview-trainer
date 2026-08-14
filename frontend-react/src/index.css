@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-950: #020617;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-slate-950 text-white min-h-screen overflow-x-hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-950;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+}
+
+/* Spinner Loader */
+.loader {
+  border: 4px solid rgba(243, 243, 243, 0.1);
+  border-top: 4px solid #3b82f6; /* Blue 500 */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Light Mode Inversion Filter */
+html.light-mode {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: white;
+}
+
+/* Keep images, videos, maps and Monaco editor looking normal under inversion */
+html.light-mode img,
+html.light-mode video,
+html.light-mode iframe,
+html.light-mode .monaco-editor,
+html.light-mode .no-invert {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Custom Utility Classes */
+.sidebar-link-active {
+  @apply bg-slate-800 text-white font-bold;
+}

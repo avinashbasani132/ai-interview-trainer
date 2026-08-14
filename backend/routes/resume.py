@@ -19,7 +19,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from models import db, ResumeData
+from models import ResumeData
 from services.docx_parser import extract_text
 from services.ats_analyzer import ATSAnalyzer
 
@@ -448,7 +448,7 @@ def upload_resume():
 
     # ── Step 19: Determine resume version ────────────────────────────────────
     user_id = get_jwt_identity()
-    prev_count = ResumeData.query.filter_by(user_id=user_id).count()
+    prev_count = ResumeData.objects(user_id=user_id).count()
     resume_version = prev_count + 1
 
     # ── Step 19: Save to DB ───────────────────────────────────────────────────
@@ -493,11 +493,9 @@ def upload_resume():
             quantified_achievements=result.quantified_achievements,
             certifications_count=result.certifications_count,
         )
-        db.session.add(record)
-        db.session.commit()
-        record_id = record.id
+        record.save()
+        record_id = str(record.id)
     except Exception as e:
-        db.session.rollback()
         logger.error(f"DB save error: {e}")
         record_id = None
 
@@ -571,17 +569,14 @@ def upload_resume():
 def get_resume_history():
     """Step 19: Returns all past resume analyses for the user, newest first."""
     user_id = get_jwt_identity()
-    records = (ResumeData.query
-               .filter_by(user_id=user_id)
-               .order_by(ResumeData.created_at.desc())
-               .all())
+    records = ResumeData.objects(user_id=user_id).order_by('-created_at')
 
     history = []
     for r in records:
         skills = _safe_json(r.extracted_skills, [])
         jr = _safe_json(r.job_readiness_json, {})
         history.append({
-            "id": r.id,
+            "id": str(r.id),
             "filename": r.filename or "resume",
             "file_type": r.file_type or "pdf",
             "score": round(r.score or 0, 1),
@@ -598,12 +593,12 @@ def get_resume_history():
 
 # ─── Route: Detail ────────────────────────────────────────────────────────────
 
-@resume_bp.route('/history/<int:record_id>', methods=['GET'])
+@resume_bp.route('/history/<string:record_id>', methods=['GET'])
 @jwt_required()
-def get_resume_detail(record_id: int):
+def get_resume_detail(record_id: str):
     """Returns full analysis for a specific resume record."""
     user_id = get_jwt_identity()
-    r = ResumeData.query.filter_by(id=record_id, user_id=user_id).first()
+    r = ResumeData.objects(id=record_id, user_id=user_id).first()
     if not r:
         return jsonify({"error": "Analysis not found or access denied."}), 404
 
@@ -612,7 +607,7 @@ def get_resume_detail(record_id: int):
         questions_raw = {"easy": questions_raw[:5], "medium": questions_raw[5:8], "hard": questions_raw[8:]}
 
     return jsonify({
-        "id": r.id,
+        "id": str(r.id),
         "filename": r.filename or "resume",
         "file_type": r.file_type or "pdf",
         "resume_version": r.resume_version or 1,
@@ -647,12 +642,12 @@ def get_resume_detail(record_id: int):
 
 # ─── Route: PDF Report Download (Step 21) ─────────────────────────────────────
 
-@resume_bp.route('/report/<int:record_id>', methods=['GET'])
+@resume_bp.route('/report/<string:record_id>', methods=['GET'])
 @jwt_required()
-def download_report(record_id: int):
+def download_report(record_id: str):
     """Step 21: Generate and return a downloadable PDF analysis report."""
     user_id = get_jwt_identity()
-    r = ResumeData.query.filter_by(id=record_id, user_id=user_id).first()
+    r = ResumeData.objects(id=record_id, user_id=user_id).first()
     if not r:
         return jsonify({"error": "Analysis not found."}), 404
 

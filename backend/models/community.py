@@ -1,21 +1,22 @@
 from datetime import datetime
 from models import db
 
-class CommunityPost(db.Model):
-    __tablename__ = 'community_posts'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    upvotes = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    replies = db.relationship('CommunityReply', backref='post', lazy=True)
 
-class CommunityReply(db.Model):
-    __tablename__ = 'community_replies'
-    id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('community_posts.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    upvotes = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class CommunityPost(db.Document):
+    meta = {'collection': 'community_posts'}
+
+    user_id = db.StringField(required=True)
+    title = db.StringField(max_length=255, required=True)
+    content = db.StringField(required=True)
+    upvotes = db.IntField(default=0)
+    created_at = db.DateTimeField(default=datetime.utcnow)
+
+
+class CommunityReply(db.Document):
+    meta = {'collection': 'community_replies', 'indexes': ['post_id']}
+
+    post_id = db.StringField(required=True)
+    user_id = db.StringField(required=True)
+    content = db.StringField(required=True)
+    upvotes = db.IntField(default=0)
+    created_at = db.DateTimeField(default=datetime.utcnow)

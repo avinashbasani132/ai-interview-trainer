@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { api } from '../services/api';
+
+export default function Auth({ onAuthSuccess }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async (actionType, isAdminAction = false) => {
+    setError('');
+    if (!email || !password) {
+      setError('Email and password are required');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let res;
+      if (actionType === 'login') {
+        res = await api.login(email, password);
+      } else {
+        res = await api.register(email, password);
+      }
+
+      if (res.success && res.data.access_token) {
+        localStorage.setItem('access_token', res.data.access_token);
+        
+        // Custom check to make sure regular users don't login via admin route or vice-versa
+        if (isAdminAction && !res.data.is_admin) {
+          setError('Access Denied: You do not have administrator permissions.');
+          localStorage.removeItem('access_token');
+          setLoading(false);
+          return;
+        }
+
+        onAuthSuccess(res.data.is_admin);
+      } else {
+        setError(res.error || 'Authentication failed');
+      }
+    } catch (e) {
+      setError(e.message || 'An error occurred during authentication.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full flex bg-slate-950">
+      {/* Left Panel: Information */}
+      <div className="hidden lg:flex flex-col justify-center w-1/2 p-12 lg:p-24 relative overflow-hidden bg-slate-900 border-r border-slate-800">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 pointer-events-none">
+          <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500 blur-[120px]"></div>
+          <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-purple-600 blur-[100px]"></div>
+        </div>
+
+        <div className="relative z-10">
+          <div className="text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent mb-6">Trainer AI</div>
+          <p className="text-slate-300 text-2xl font-light leading-relaxed mb-10">Your intelligent, AI-powered interview partner designed to help you land your dream job.</p>
+          
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-indigo-900/30 text-indigo-400 rounded-xl mt-1">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white mb-1">AI-Powered Interviews</h4>
+                <p className="text-slate-400 text-sm">Experience dynamic, responsive questioning powered by advanced LLMs.</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-900/30 text-blue-400 rounded-xl mt-1">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white mb-1">ML Readiness Scoring</h4>
+                <p className="text-slate-400 text-sm">Get real-time insights into your job readiness based on actual performance.</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-purple-900/30 text-purple-400 rounded-xl mt-1">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white mb-1">Live Coding Arena</h4>
+                <p className="text-slate-400 text-sm">Practice technical rounds in a live integrated IDE environment.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel: Authentication */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 relative">
+        <div className="text-center lg:hidden mb-10 mt-8">
+          <div className="text-5xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent mb-3">Trainer AI</div>
+          <p className="text-slate-400 text-lg">Your AI-Powered Interview Partner</p>
+        </div>
+
+        <div className="bg-slate-900/80 border border-slate-700/60 p-8 sm:p-10 rounded-2xl shadow-2xl max-w-md w-full backdrop-blur-xl relative z-10">
+          <h2 className="text-3xl font-bold mb-2 text-white">Welcome Back</h2>
+          <p className="text-slate-400 text-sm mb-8">Login or create an account to begin</p>
+          
+          <div className="space-y-4">
+            <input 
+              type="email" 
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-slate-950/50 border border-slate-700 text-white p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-slate-500 transition shadow-inner"
+            />
+            
+            <input 
+              type="password" 
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-slate-950/50 border border-slate-700 text-white p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-slate-500 transition shadow-inner"
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-400 mt-4 text-sm bg-red-900/20 border border-red-500/20 p-3 rounded-lg">
+              {error}
+            </p>
+          )}
+
+          <div className="flex gap-3 mt-8">
+            <button 
+              disabled={loading}
+              onClick={() => handleAction('login', false)}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] disabled:opacity-50"
+            >
+              {loading ? 'Please wait...' : 'Login'}
+            </button>
+            <button 
+              disabled={loading}
+              onClick={() => handleAction('register', false)}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-semibold py-3.5 rounded-xl transition-all disabled:opacity-50"
+            >
+              Register
+            </button>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-800">
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-4 text-center">Administrator Access</p>
+            <button 
+              disabled={loading}
+              onClick={() => handleAction('login', true)}
+              className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(217,119,6,0.2)] hover:shadow-[0_0_25px_rgba(217,119,6,0.4)] border border-amber-500/30 flex items-center justify-center gap-2 group disabled:opacity-50"
+            >
+              <svg className="w-5 h-5 text-amber-200 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              Admin Login
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-8 flex gap-6 text-slate-600 text-xs absolute bottom-6">
+          <span>🔒 Secure JWT Auth</span>
+          <span>✨ Powered by Gemini AI</span>
+        </div>
+      </div>
+    </div>
+  );
+}

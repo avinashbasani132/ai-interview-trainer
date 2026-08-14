@@ -3,10 +3,25 @@ import sys
 import traceback
 import argparse
 from flask import Flask, jsonify, request, send_from_directory, render_template
-from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from waitress import serve
+
+
+def _log_error(message: str, filename: str = "error_log.txt") -> None:
+    """
+    Write error messages to a log file.
+    On Render (read-only filesystem), logs are written to /tmp/.
+    Locally, logs are written to the current working directory.
+    """
+    try:
+        log_dir = "/tmp" if os.getenv("RENDER") else "."
+        log_path = os.path.join(log_dir, filename)
+        with open(log_path, "a") as f:
+            f.write(message + "\n")
+    except Exception:
+        pass  # Never crash the app because of a logging failure
+
 
 # Add current directory to path to ensure correct package resolution
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -14,31 +29,26 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from config import config_by_name
 from models import db
 
+
 def create_app(config_name="dev"):
     """
     Application Factory Pattern.
-    Creates and configures the Flask application cleanly.
+    Creates and configures the Flask application with MongoDB via MongoEngine.
     """
-    # Initialize the Flask app with static and template folders configured
-    # static_url_path='' allows serving static files from the root URL path (e.g. /js/app.js)
     app = Flask(
-        __name__, 
-        static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), 'static')),
-        template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates')),
+        __name__,
+        static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend-react/dist')),
+        template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend-react/dist')),
         static_url_path=''
     )
 
-    # Load configuration securely from the config dictionary
+    # Load configuration from the config dictionary
     app.config.from_object(config_by_name.get(config_name, config_by_name["dev"]))
 
     # Initialize Extensions
     CORS(app)
-    db.init_app(app)
-    Migrate(app, db)
+    db.init_app(app)   # Flask-MongoEngine — no create_all() needed (schemaless)
     JWTManager(app)
-
-    with app.app_context():
-        db.create_all()
 
     # Register Blueprints (Modular Routing)
     from routes.auth import auth_bp
@@ -77,10 +87,11 @@ def create_app(config_name="dev"):
     # Health check
     @app.route("/health", methods=["GET"])
     def health_check():
-        """Basic health check endpoint ensuring the server is running securely."""
+        """Basic health check endpoint."""
         return jsonify({
             "status": "healthy",
-            "environment": config_name
+            "environment": config_name,
+            "database": "mongodb"
         }), 200
 
     # Favicon support without 404 logs
@@ -96,85 +107,76 @@ def create_app(config_name="dev"):
     @app.route('/api/logout', methods=['GET', 'POST'])
     @app.route('/api/auth/logout', methods=['GET', 'POST'])
     def auth_logout_redirect():
-        return jsonify({
-            "success": True,
-            "message": "Logout successful"
-        }), 200
+        return jsonify({"success": True, "message": "Logout successful"}), 200
 
-    # Specific common SPA route redirects to handle direct URL entry
+    # Specific common SPA route redirects
     @app.route('/login', methods=['GET'])
     @app.route('/register', methods=['GET'])
     @app.route('/dashboard', methods=['GET'])
     @app.route('/admin', methods=['GET'])
     def spa_redirect():
-        return render_template('base.html')
+        return render_template('index.html')
 
     # Serve the frontend SPA for any non-API route
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_frontend(path):
         """Serve the frontend single-page application."""
-        # Let Flask serve actual static files (js/, css/, images/)
         if path and os.path.exists(os.path.join(app.static_folder, path)):
             return send_from_directory(app.static_folder, path)
-        # Fall back to base.html for SPA routing
-        return render_template('base.html')
+        return render_template('index.html')
 
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
-        with open("error_log.txt", "a") as f:
-            f.write(f"404 Error: {request.url}\n")
+        _log_error(f"404 Error: {request.url}")
         return jsonify({"error": "Resource not found"}), 404
 
     @app.errorhandler(405)
     def method_not_allowed_error(error):
-        with open("error_log.txt", "a") as f:
-            f.write(f"405 Error: {request.method} {request.url}\n")
+        _log_error(f"405 Error: {request.method} {request.url}")
         return jsonify({"error": "Method not allowed"}), 405
 
     @app.errorhandler(500)
     def internal_error(error):
-        with open("error_log.txt", "a") as f:
-            f.write(f"500 Error: {traceback.format_exc()}\n")
+        _log_error(f"500 Error: {traceback.format_exc()}")
         return jsonify({"error": "An internal error occurred", "details": str(error)}), 500
 
     return app
 
+
 def parse_args():
-    """
-    Safely parses command-line arguments using argparse.
-    """
+    """Safely parses command-line arguments."""
     parser = argparse.ArgumentParser(description="Secure Flask Application Runner")
     parser.add_argument(
-        "--mode", 
-        type=str, 
-        choices=["dev", "prod"], 
+        "--mode",
+        type=str,
+        choices=["dev", "prod"],
         default="dev",
         help="Run mode: 'dev' for local testing or 'prod' for secure deployment."
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port to run the application on (default: 8000)."
+        default=int(os.environ.get("PORT", 8000)),
+        help="Port to run the application on (default: $PORT or 8000)."
     )
     return parser.parse_args()
 
+
 def main():
-    """
-    Main entry point allowing the application to run securely based on cli args.
-    """
+    """Main entry point."""
     args = parse_args()
-    print(f"[*] Starting secure application in {args.mode.upper()} mode on port {args.port}...")
+    print(f"[*] Starting application in {args.mode.upper()} mode on port {args.port}...")
     app = create_app(config_name=args.mode)
-    
+
     if args.mode == "dev":
         print("[!] Running Flask built-in server (Not for Production).")
         app.run(host="127.0.0.1", port=args.port, debug=True)
     elif args.mode == "prod":
         print("[*] Running secure WSGI Waitress server.")
         serve(app, host="0.0.0.0", port=args.port)
+
 
 if __name__ == "__main__":
     main()

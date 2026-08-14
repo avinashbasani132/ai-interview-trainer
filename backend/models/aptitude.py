@@ -1,13 +1,14 @@
 from models import db
 
-class AptitudeQuestion(db.Model):
-    __tablename__ = 'aptitude_questions'
-    id = db.Column(db.Integer, primary_key=True)
-    topic = db.Column(db.String(100), nullable=False)
-    question_text = db.Column(db.Text, nullable=False)
-    option_a = db.Column(db.String(255), nullable=False)
-    option_b = db.Column(db.String(255), nullable=False)
-    option_c = db.Column(db.String(255), nullable=False)
-    option_d = db.Column(db.String(255), nullable=False)
-    correct_option = db.Column(db.String(1), nullable=False) # A, B, C, D
-    explanation = db.Column(db.Text, nullable=True)
+
+class AptitudeQuestion(db.Document):
+    meta = {'collection': 'aptitude_questions'}
+
+    topic = db.StringField(max_length=100, required=True)
+    question_text = db.StringField(required=True)
+    option_a = db.StringField(max_length=255, required=True)
+    option_b = db.StringField(max_length=255, required=True)
+    option_c = db.StringField(max_length=255, required=True)
+    option_d = db.StringField(max_length=255, required=True)
+    correct_option = db.StringField(max_length=1, required=True)  # A, B, C, D
+    explanation = db.StringField()

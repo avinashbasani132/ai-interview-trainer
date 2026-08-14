@@ -1,5 +1,8 @@
-# Environments
+# Environments — NEVER commit secrets
 .env
+*.env
+.env.*
+backend/.env
 .venv/
 venv/
 ENV/
@@ -18,8 +21,17 @@ data/
 
 # Logs
 *.log
-error_log.txt
-user_out.txt
+*.txt
+traceback_user.log
+
+# Uploads (user files)
+backend/uploads/
+
+# Migrations versions (auto-generated, regenerate on deploy)
+# backend/migrations/versions/
+
+# Test cache
+.pytest_cache/
 
 # OS generated files
 .DS_Store
@@ -34,3 +46,6 @@ Thumbs.db
 # Gemini / Agents
 .agent/
 .gemini/
+
+# Backup files
+*.bak

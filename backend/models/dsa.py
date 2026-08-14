@@ -1,24 +1,26 @@
 from datetime import datetime
 from models import db
 
-class DSAProblem(db.Model):
-    __tablename__ = 'dsa_problems'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    topic = db.Column(db.String(100), nullable=True)
-    description = db.Column(db.Text, nullable=False)
-    difficulty = db.Column(db.String(20), default="Medium") 
-    example_input = db.Column(db.Text, nullable=True)
-    example_output = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class DSASubmission(db.Model):
-    __tablename__ = 'dsa_submissions'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    problem_id = db.Column(db.Integer, db.ForeignKey('dsa_problems.id'), nullable=False)
-    code_submitted = db.Column(db.Text, nullable=False)
-    language = db.Column(db.String(50), default="python")
-    score = db.Column(db.Float, nullable=False)
-    feedback_json = db.Column(db.Text, nullable=True) 
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+class DSAProblem(db.Document):
+    meta = {'collection': 'dsa_problems'}
+
+    title = db.StringField(max_length=200, required=True)
+    topic = db.StringField(max_length=100)
+    description = db.StringField(required=True)
+    difficulty = db.StringField(default="Medium")
+    example_input = db.StringField()
+    example_output = db.StringField()
+    created_at = db.DateTimeField(default=datetime.utcnow)
+
+
+class DSASubmission(db.Document):
+    meta = {'collection': 'dsa_submissions', 'indexes': ['user_id']}
+
+    user_id = db.StringField(required=True)
+    problem_id = db.StringField(required=True)
+    code_submitted = db.StringField(required=True)
+    language = db.StringField(default="python")
+    score = db.FloatField(required=True)
+    feedback_json = db.StringField()
+    timestamp = db.DateTimeField(default=datetime.utcnow)
