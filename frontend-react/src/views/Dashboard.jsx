@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Sparkles, Trophy, Award, ArrowRight, BookOpen, FileText, Briefcase, Play, Calendar, Download } from 'lucide-react';
+import { Sparkles, Trophy, Award, ArrowRight, BookOpen, FileText, Briefcase, Play, Calendar, Download, Code } from 'lucide-react';
 
 export default function Dashboard({ setActiveView, startStandardInterview }) {
   const [data, setData] = useState(null);
