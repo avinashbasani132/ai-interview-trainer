@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('system');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -23,7 +23,20 @@ export default function Admin() {
 
   useEffect(() => {
     loadStats();
+    loadSystemLogs();
   }, []);
+
+  const loadSystemLogs = async () => {
+    try {
+      setLoading(true);
+      const logs = await api.getAdminAuditLogs();
+      setAuditLogs(logs.logs || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadStats = async () => {
     try {

@@ -149,12 +149,12 @@ export const api = {
   getChatSuggestions: () => request('/chat/suggestions'),
 
   // Certificates
-  getMyCertificates: () => request('/certificate/api/certificate/my-certificates'),
-  generateCertificate: (interviewId, interviewType, mode) => request('/certificate/api/certificate/generate', {
+  getMyCertificates: () => request('/certificate/my-certificates'),
+  generateCertificate: (interviewId, interviewType, mode) => request('/certificate/generate', {
     method: 'POST',
     body: { interview_id: interviewId, interview_type: interviewType, mode }
   }),
-  getCertificateDownloadUrl: (certId) => `${API_BASE}/api/certificate/download/${certId}`,
+  getCertificateDownloadUrl: (certId) => `${API_BASE}/certificate/download/${certId}`,
 
   // Learning Roadmap
   getRoadmap: () => request('/roadmap/'),
