@@ -38,13 +38,14 @@ def register():
             "error": "Failed to create user."
         }), 500
 
-    access_token = create_access_token(identity=str(new_user.id))
+    access_token = create_access_token(identity=str(new_user.id), additional_claims={"is_admin": new_user.is_admin})
     return jsonify({
         "success": True,
         "message": "User registered successfully",
         "data": {
             "access_token": access_token,
-            "user_id": str(new_user.id)
+            "user_id": str(new_user.id),
+            "is_admin": new_user.is_admin
         }
     }), 201
 
@@ -69,7 +70,7 @@ def login():
         user.last_login = datetime.utcnow()
         user.save()
 
-        access_token = create_access_token(identity=str(user.id))
+        access_token = create_access_token(identity=str(user.id), additional_claims={"is_admin": user.is_admin})
         return jsonify({
             "success": True,
             "message": "Login successful",

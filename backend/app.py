@@ -140,7 +140,25 @@ def create_app(config_name="dev"):
     @app.errorhandler(500)
     def internal_error(error):
         _log_error(f"500 Error: {traceback.format_exc()}")
-        return jsonify({"error": "An internal error occurred", "details": str(error)}), 500
+        error_str = str(error)
+        if "ServerSelectionTimeoutError" in error_str or "ConnectionFailure" in error_str or "mongo" in error_str.lower():
+            return jsonify({
+                "error": "Database Connection Failure. Please ensure MongoDB is running and your current IP is whitelisted on MongoDB Atlas."
+            }), 500
+        return jsonify({"error": "An internal error occurred", "details": error_str}), 500
+
+    try:
+        import pymongo.errors
+        import mongoengine.connection
+        @app.errorhandler(pymongo.errors.ServerSelectionTimeoutError)
+        @app.errorhandler(mongoengine.connection.ConnectionFailure)
+        def database_connection_error(error):
+            _log_error(f"Database Connection Error: {traceback.format_exc()}")
+            return jsonify({
+                "error": "Database Connection Failure. Please ensure MongoDB is running and your current IP is whitelisted on MongoDB Atlas."
+            }), 500
+    except ImportError:
+        pass
 
     return app
 

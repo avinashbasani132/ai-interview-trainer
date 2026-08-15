@@ -103,10 +103,12 @@ export default function Rounds({ sessionId, setSessionId }) {
   const loadRoundsState = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await api.getDashboard();
       setCurrentRound(data.current_round || 1);
     } catch (e) {
       console.error(e);
+      setError(e.message || 'Failed to load user status');
     } finally {
       setLoading(false);
     }
@@ -425,6 +427,13 @@ export default function Rounds({ sessionId, setSessionId }) {
             <p className="text-slate-400 mt-1 text-sm">Choose your practice pathway and simulate actual industry hiring assessments.</p>
           </div>
 
+          {error && (
+            <div className="bg-red-900/20 border border-red-500/30 text-red-400 p-4 rounded-xl text-xs flex justify-between items-center animate-fade-in">
+              <span>⚠️ {error}</span>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-300 font-bold ml-2">Dismiss</button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* General interview card */}
             <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 hover:border-blue-500/50 p-6 rounded-2xl flex flex-col justify-between transition-all group hover:-translate-y-1">
@@ -490,6 +499,13 @@ export default function Rounds({ sessionId, setSessionId }) {
               Quit Track
             </button>
           </div>
+
+          {error && (
+            <div className="bg-red-900/20 border border-red-500/30 text-red-400 p-4 rounded-xl text-xs flex justify-between items-center animate-fade-in">
+              <span>⚠️ {error}</span>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-300 font-bold ml-2">Dismiss</button>
+            </div>
+          )}
 
           {/* Progress Tracker */}
           <div className="bg-slate-900 border border-slate-800/80 p-6 rounded-xl flex items-center justify-between overflow-x-auto gap-4">
