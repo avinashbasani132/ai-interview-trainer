@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     rootDir: .
-    buildCommand: pip install -r requirements.txt && npm --prefix frontend-react install && npm --prefix frontend-react run build
+    buildCommand: chmod +x build.sh && ./build.sh
     startCommand: gunicorn --chdir backend "app:create_app()" --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: SECRET_KEY

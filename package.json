@@ -1,0 +1,11 @@
+{
+  "name": "ai-interview-trainer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Interview Trainer & Career Placement Platform",
+  "scripts": {
+    "install": "cd frontend-react && npm install",
+    "build": "cd frontend-react && npm install && npm run build",
+    "start": "gunicorn --chdir backend \"app:create_app()\" --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+  }
+}
