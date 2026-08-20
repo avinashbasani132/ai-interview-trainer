@@ -8,7 +8,7 @@ from google import genai
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from app.models import db, AptitudeQuestion
+from models import AptitudeQuestion
 
 def process_chunk_with_gemini(model, text, topic):
     prompt = f"""
@@ -79,7 +79,7 @@ def run_import():
             for j in range(i, min(i + chunk_size, total_pages)):
                 try:
                     chunk_text += reader.pages[j].extract_text() + "\n"
-                except:
+                except Exception:
                     pass
             
             if not chunk_text.strip():
@@ -101,12 +101,11 @@ def run_import():
                         correct_option=q.get('correct_option', 'A'),
                         explanation=q.get('explanation', '')
                     )
-                    db.session.add(question)
+                    question.save()
                     total_inserted += 1
                 except Exception as e:
                     print(f"  Error creating question: {e}")
-                    
-            db.session.commit()
+
             
         print(f"\nSuccessfully imported {total_inserted} aptitude questions into the database!")
 

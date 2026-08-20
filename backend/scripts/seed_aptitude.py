@@ -1,5 +1,4 @@
 from app import create_app
-from models import db
 from models.aptitude import AptitudeQuestion
 
 app = create_app('dev')
@@ -40,30 +39,25 @@ def seed_aptitude_questions():
     ]
 
     with app.app_context():
-        # First, ensure table exists implicitly handling the newly added AptitudeQuestion
-        try:
-            AptitudeQuestion.query.first()
-        except:
-            print("Creating all tables in case AptitudeQuestion is missing.")
-            db.create_all()
-
-        if AptitudeQuestion.query.count() < 25:
+        if AptitudeQuestion.objects.count() < 25:
             # Add seed questions
             for q in questions_data:
-                db.session.add(AptitudeQuestion(
-                    topic=q["topic"],
-                    question_text=q["text"],
-                    option_a=q["a"],
-                    option_b=q["b"],
-                    option_c=q["c"],
-                    option_d=q["d"],
-                    correct_option=q["ans"],
-                    explanation="AI evaluates logic directly, standard rule."
-                ))
-            db.session.commit()
-            print("Seeded aptitude questions successfully.")
+                existing = AptitudeQuestion.objects(question_text=q["text"]).first()
+                if not existing:
+                    AptitudeQuestion(
+                        topic=q["topic"],
+                        question_text=q["text"],
+                        option_a=q["a"],
+                        option_b=q["b"],
+                        option_c=q["c"],
+                        option_d=q["d"],
+                        correct_option=q["ans"],
+                        explanation="Standard mathematical & logical reasoning calibration."
+                    ).save()
+            print("Seeded aptitude questions successfully into MongoDB.")
         else:
-            print("Aptitude questions already exist.")
+            print("Aptitude questions already exist in MongoDB.")
+
 
 if __name__ == "__main__":
     seed_aptitude_questions()
