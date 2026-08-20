@@ -1,9 +1,9 @@
-import json
 from app import create_app
 from models import db
 from models.aptitude import AptitudeQuestion
 
 app = create_app('dev')
+
 
 def seed_aptitude_questions():
     questions_data = [

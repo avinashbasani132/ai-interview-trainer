@@ -4,9 +4,9 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import InterviewSession, RoundResult, User
 from services.ai_service import ai_service
-from werkzeug.utils import secure_filename
 
 media_bp = Blueprint('media', __name__)
+
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'hr')
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

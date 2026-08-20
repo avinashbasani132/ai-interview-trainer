@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Calendar, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
+import { Calendar, CheckCircle2, XCircle, Filter } from 'lucide-react';
+
 
 export default function History() {
   const [history, setHistory] = useState([]);

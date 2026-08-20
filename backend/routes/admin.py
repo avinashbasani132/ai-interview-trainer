@@ -1,8 +1,8 @@
-import os
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import User, InterviewSession, RoundResult
+from models import User, InterviewSession
 from app import _log_error
+
 
 admin_bp = Blueprint('admin', __name__)
 

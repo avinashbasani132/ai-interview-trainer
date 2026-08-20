@@ -9,8 +9,8 @@ personalized, context-aware career guidance responses.
 
 import json
 import logging
-import os
 from typing import Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,9 @@ def build_user_context(user_id: int) -> str:
     try:
         from models import (
             User, ResumeData, RoundResult, InterviewSession,
-            LearningRecommendation, DSASubmission
+            LearningRecommendation
         )
+
 
         user = User.query.get(user_id)
         if not user:

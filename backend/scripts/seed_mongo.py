@@ -1,16 +1,17 @@
 import os
 import sys
 import json
-import random
 
 # Add backend to sys.path so we can import the app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from models import db
 from models.aptitude import AptitudeQuestion
 from models.dsa import DSAProblem
-from models.company import Company
+from models.company import Company, CompanyQuestion
+from database.company_questions_data import COMPANY_QUESTIONS_DATA
+
+
 
 QUESTIONS_DATA = [
     {"topic": "Problems on Trains", "text": "What is the speed of a train that travels 120 km in 2 hours?", "a": "40 km/h", "b": "60 km/h", "c": "70 km/h", "d": "80 km/h", "ans": "B"},
@@ -88,6 +89,7 @@ def seed_mongo_db():
         AptitudeQuestion.objects.delete()
         DSAProblem.objects.delete()
         Company.objects.delete()
+        CompanyQuestion.objects.delete()
 
         # 1. Seed Aptitude Questions
         print("[*] Seeding 30 Aptitude questions...")
@@ -115,13 +117,15 @@ def seed_mongo_db():
                 example_output=p["example_output"]
             ).save()
 
-        # 3. Seed Companies
-        print("[*] Seeding 33 Companies...")
+        # 3. Seed Companies & Company Questions
+        print("[*] Seeding 33 Companies and Company-Wise Question Bank...")
         products = ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Netflix", "Adobe", "Oracle", "IBM", "Intel", "Cisco", "NVIDIA", "Salesforce", "SAP", "Tesla"]
         services = ["Infosys", "TCS", "Wipro", "Accenture", "Capgemini", "Cognizant", "Deloitte", "HCL", "Tech Mahindra", "LTIMindtree"]
         startups = ["Zoho", "Freshworks", "Flipkart", "PhonePe", "Paytm", "Swiggy", "Zomato", "Razorpay"]
         
         companies_list = products + services + startups
+        total_company_questions = 0
+
         for name in companies_list:
             if name in products:
                 cat = "Product"
@@ -154,7 +158,7 @@ def seed_mongo_db():
             elif name == "Salesforce": logo = "https://img.icons8.com/color/144/salesforce.png"
 
             rounds = ["Aptitude", "Technical MCQ", "Coding", "Technical AI", "HR"]
-            Company(
+            comp = Company(
                 name=name,
                 description=desc,
                 logo_url=logo,
@@ -163,9 +167,45 @@ def seed_mongo_db():
                 difficulty=diff,
                 duration=dur,
                 rounds_list=json.dumps(rounds)
-            ).save()
+            )
+            comp.save()
+
+            # Seed Structured Company Questions
+            comp_data = COMPANY_QUESTIONS_DATA.get(name, {})
+            for round_name, q_list in comp_data.items():
+                for q_item in q_list:
+                    options_dict = {}
+                    if "option_a" in q_item:
+                        options_dict = {
+                            "A": q_item.get("option_a", ""),
+                            "B": q_item.get("option_b", ""),
+                            "C": q_item.get("option_c", ""),
+                            "D": q_item.get("option_d", "")
+                        }
+                    elif round_name == "Coding":
+                        options_dict = {
+                            "title": q_item.get("title", "DSA Problem"),
+                            "difficulty": q_item.get("difficulty", diff),
+                            "example_input": q_item.get("example_input", ""),
+                            "example_output": q_item.get("example_output", "")
+                        }
+
+                    CompanyQuestion(
+                        company_id=str(comp.id),
+                        company_name=comp.name,
+                        round_type=round_name,
+                        topic=q_item.get("topic", round_name),
+                        difficulty=q_item.get("difficulty", diff),
+                        question_text=q_item.get("question_text") or q_item.get("description", ""),
+                        options_json=json.dumps(options_dict) if options_dict else "{}",
+                        correct_option=q_item.get("correct_option", "A"),
+                        expected_answer=q_item.get("expected_answer", ""),
+                        evaluation_criteria=q_item.get("evaluation_criteria", "")
+                    ).save()
+                    total_company_questions += 1
             
-        print("[+] MongoDB Seeding Complete! Loaded: 30 Aptitude, 4 DSA, 33 Companies.")
+        print(f"[+] MongoDB Seeding Complete! Loaded: 30 Aptitude, 4 DSA, 33 Companies, {total_company_questions} Structured Company Questions.")
 
 if __name__ == '__main__':
     seed_mongo_db()
+

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import datetime
-from models import User, DSASubmission
+from models import User
 from services.dsa_service import get_daily_problem
 
 dsa_bp = Blueprint("dsa", __name__)
@@ -21,7 +21,7 @@ def submit_dsa():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    data = request.json
+    data = request.json or {}
     code = data.get("code")
     problem_id = data.get("problem_id", "1")
 
@@ -51,11 +51,14 @@ def submit_dsa():
             "success": True,
             "message": "Solution Accepted!",
             "score": score,
+            "problem_id": problem_id,
             "current_streak": user.current_streak
         }), 200
 
     return jsonify({
         "success": False,
         "message": "Solution Failed Test Cases.",
+        "problem_id": problem_id,
         "score": score
     }), 200
+

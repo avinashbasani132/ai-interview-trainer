@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Award, Download, CheckCircle, ExternalLink, Calendar, Mail } from 'lucide-react';
+import { Download, ExternalLink, Calendar, Mail } from 'lucide-react';
+
 
 export default function Certificates({ setActiveView }) {
   const [certs, setCerts] = useState([]);

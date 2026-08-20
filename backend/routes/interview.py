@@ -18,7 +18,7 @@ def start_interview():
         new_session = InterviewSession(user_id=user_id, current_round=1, attempt_count=1)
         new_session.save()
         return jsonify({"message": "Interview started", "session_id": str(new_session.id), "round": 1}), 201
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Failed to start interview"}), 500
 
 
@@ -74,7 +74,7 @@ def evaluate_round():
 
     try:
         session.save()
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Database error saving result"}), 500
 
     return jsonify({
@@ -154,7 +154,7 @@ def resume_interview():
     try:
         questions = ai_service.generate_resume_questions(skills_str, count=6)
         return jsonify({"questions": questions}), 200
-    except Exception as e:
+    except Exception:
         return jsonify({"questions": [
             f"Explain your experience with {skills[0] if skills else 'your listed technologies'}.",
             "Can you describe a challenging project you built?",

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, X, Minus, Settings, Trash2, Send, Mic, Paperclip, 
-  Sparkles, CheckCircle2, ChevronRight 
+  Sparkles, ChevronRight 
 } from 'lucide-react';
+
 import { api } from '../services/api';
 import { marked } from 'marked';
 

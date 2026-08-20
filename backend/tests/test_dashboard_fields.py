@@ -1,6 +1,7 @@
 from app import create_app
-from models import db, User, InterviewSession, LearningRecommendation, DSAProblem, ResumeData
+from models import User, InterviewSession, LearningRecommendation, DSAProblem, ResumeData
 import traceback
+
 
 app = create_app()
 
@@ -32,6 +33,7 @@ with app.app_context():
             print("hr attempts:", user.hr_attempts)
             print("aptitude attempts:", user.aptitude_attempts)
             print("Success")
-    except Exception as e:
+    except Exception:
         with open('traceback.log', 'w', encoding='utf-8') as f:
             f.write(traceback.format_exc())
+

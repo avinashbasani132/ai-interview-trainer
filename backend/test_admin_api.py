@@ -1,7 +1,5 @@
-import sys
-import os
 import requests
-import json
+
 
 # Setup paths to import backend stuff if needed, but we can just use HTTP
 BASE_URL = 'http://127.0.0.1:8000/api'

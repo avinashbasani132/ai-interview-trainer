@@ -2,9 +2,9 @@ import io
 import json
 import logging
 import re
-from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 from models import ResumeInterviewSession, User, ResumeData
 from services.docx_parser import extract_text

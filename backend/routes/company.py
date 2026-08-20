@@ -1,10 +1,13 @@
 import json
 import collections
-from datetime import datetime
 from flask import Blueprint, jsonify, request
+
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Company, InterviewSession, RoundResult, InterviewQuestion, DSAProblem, User
+from models import Company, InterviewSession, RoundResult, InterviewQuestion, User, CompanyQuestion
 from services.ai_service import ai_service
+from database.company_questions_data import COMPANY_QUESTIONS_DATA
+
+
 
 company_bp = Blueprint('company', __name__)
 
@@ -33,6 +36,38 @@ def list_companies():
             "duration": c.duration,
             "rounds": rounds_list
         })
+    if len(res) == 0:
+        products = ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Netflix", "Adobe", "Oracle", "IBM", "Intel", "Cisco", "NVIDIA", "Salesforce", "SAP", "Tesla"]
+        services = ["Infosys", "TCS", "Wipro", "Accenture", "Capgemini", "Cognizant", "Deloitte", "HCL", "Tech Mahindra", "LTIMindtree"]
+        startups = ["Zoho", "Freshworks", "Flipkart", "PhonePe", "Paytm", "Swiggy", "Zomato", "Razorpay"]
+        all_comps = products + services + startups
+        for name in all_comps:
+            cat = "Product" if name in products else ("Service" if name in services else "Startup")
+            diff = "Hard" if name in products else ("Easy" if name in services else "Medium")
+            dur = "2.5 Hours" if name in products else "2 Hours"
+            logo = f"https://img.icons8.com/color/144/{name.lower()}-logo.png" if name.lower() not in ["meta", "sap", "oracle"] else f"https://img.icons8.com/fluency/144/{name.lower()}.png"
+            if name == "Google": logo = "https://img.icons8.com/color/144/google-logo.png"
+            elif name == "Microsoft": logo = "https://img.icons8.com/color/144/microsoft.png"
+            elif name == "Amazon": logo = "https://img.icons8.com/color/144/amazon.png"
+            elif name == "Apple": logo = "https://img.icons8.com/color/144/mac-os--v2.png"
+            elif name == "Meta": logo = "https://img.icons8.com/color/144/meta-logo.png"
+            elif name == "Netflix": logo = "https://img.icons8.com/color/144/netflix-desktop-app.png"
+            elif name == "NVIDIA": logo = "https://img.icons8.com/color/144/nvidia.png"
+            elif name == "Tesla": logo = "https://img.icons8.com/color/144/tesla-logo.png"
+            elif name == "Salesforce": logo = "https://img.icons8.com/color/144/salesforce.png"
+
+            res.append({
+                "id": name.lower(),
+                "name": name,
+                "description": f"Prepare for {name}'s rigorous recruitment cycles and tailored assessments.",
+                "logo_url": logo,
+                "category": cat,
+                "hiring_type": "Software Engineer / SDE",
+                "difficulty": diff,
+                "duration": dur,
+                "rounds": ["Aptitude", "Technical MCQ", "Coding", "Technical AI", "HR"]
+            })
+
     return jsonify({"companies": res}), 200
 
 
@@ -49,19 +84,42 @@ def start_company_interview():
     if not company_id:
         return jsonify({"error": "Company ID required"}), 400
 
-    company = Company.objects(id=company_id).first()
+    company = None
+    try:
+        company = Company.objects(id=company_id).first()
+    except Exception:
+        pass
+    if not company:
+        company = Company.objects(name__iexact=company_id).first()
+
+    if not company:
+        for k in COMPANY_QUESTIONS_DATA.keys():
+            if k.lower() == str(company_id).lower():
+                cat = "Product" if k in ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Netflix", "Adobe", "Oracle", "IBM", "Intel", "Cisco", "NVIDIA", "Salesforce", "SAP", "Tesla"] else ("Service" if k in ["Infosys", "TCS", "Wipro", "Accenture", "Capgemini", "Cognizant", "Deloitte", "HCL", "Tech Mahindra", "LTIMindtree"] else "Startup")
+                comp_obj = Company(
+                    name=k,
+                    category=cat,
+                    difficulty="Hard" if cat == "Product" else "Medium",
+                    duration="2 Hours",
+                    rounds_list=json.dumps(["Aptitude", "Technical MCQ", "Coding", "Technical AI", "HR"])
+                )
+                comp_obj.save()
+                company = comp_obj
+                company_id = str(comp_obj.id)
+                break
+
     if not company:
         return jsonify({"error": "Company not found"}), 404
 
     try:
         # Cancel active in_progress sessions for this company
-        for s in InterviewSession.objects(user_id=user_id, company_id=company_id, status='in_progress'):
+        for s in InterviewSession.objects(user_id=user_id, company_id=str(company.id), status='in_progress'):
             s.status = 'failed'
             s.save()
 
         new_session = InterviewSession(
             user_id=user_id,
-            company_id=company_id,
+            company_id=str(company.id),
             current_round=1,
             attempt_count=1,
             job_role=job_role,
@@ -86,9 +144,18 @@ def get_session_state(session_id):
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
-    company = Company.objects(id=session.company_id).first() if session.company_id else None
+    company = None
+    if session.company_id:
+        try:
+            company = Company.objects(id=session.company_id).first()
+        except Exception:
+            pass
+        if not company:
+            company = Company.objects(name__iexact=session.company_id).first()
+
     company_name = company.name if company else "General"
     logo_url = company.logo_url if company else None
+
 
     rounds_list = ["Aptitude", "Technical MCQ", "Coding", "Technical AI", "HR"]
     if company and company.rounds_list:
@@ -117,9 +184,18 @@ def get_round_questions(session_id, round_num):
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
-    company = Company.objects(id=session.company_id).first() if session.company_id else None
+    company = None
+    if session.company_id:
+        try:
+            company = Company.objects(id=session.company_id).first()
+        except Exception:
+            pass
+        if not company:
+            company = Company.objects(name__iexact=session.company_id).first()
+
     if not company:
         return jsonify({"error": "This route is only for Company interviews"}), 400
+
 
     round_names = {1: "Aptitude", 2: "Technical MCQ", 3: "Coding", 4: "Technical AI", 5: "HR"}
     round_name = round_names.get(round_num, "Aptitude")
@@ -144,58 +220,134 @@ def get_round_questions(session_id, round_num):
         return jsonify({"questions": res_qs}), 200
 
     try:
+        # 1. Check if structured CompanyQuestions exist in DB for this company & round
+        company_db_qs = list(CompanyQuestion.objects(company_id=str(company.id), round_type=round_name))
+        if not company_db_qs:
+            company_db_qs = list(CompanyQuestion.objects(company_name=company.name, round_type=round_name))
+
+        # 2. Check structured dataset in memory if DB unpopulated
+        dataset_qs = COMPANY_QUESTIONS_DATA.get(company.name, {}).get(round_name, [])
+
         if round_num in [1, 2]:
-            mcqs = ai_service.generate_company_mcqs(company.name, round_name, job_role=session.job_role, difficulty=session.difficulty)
             saved_qs = []
-            for m in mcqs:
-                opts = {
-                    "A": m.get("option_a", ""),
-                    "B": m.get("option_b", ""),
-                    "C": m.get("option_c", ""),
-                    "D": m.get("option_d", "")
-                }
-                q = InterviewQuestion(
-                    session_id=str(session.id),
-                    round_type=round_name,
-                    question_text=m.get("question_text", ""),
-                    options_json=json.dumps(opts),
-                    ai_feedback=m.get("correct_option", "A")
-                )
-                q.save()
-                saved_qs.append(q)
+            if company_db_qs:
+                for cq in company_db_qs:
+                    q = InterviewQuestion(
+                        session_id=str(session.id),
+                        round_type=round_name,
+                        question_text=cq.question_text,
+                        options_json=cq.options_json or "{}",
+                        ai_feedback=cq.correct_option or "A"
+                    )
+                    q.save()
+                    saved_qs.append(q)
+            elif dataset_qs:
+                for d_item in dataset_qs:
+                    opts = {
+                        "A": d_item.get("option_a", ""),
+                        "B": d_item.get("option_b", ""),
+                        "C": d_item.get("option_c", ""),
+                        "D": d_item.get("option_d", "")
+                    }
+                    q = InterviewQuestion(
+                        session_id=str(session.id),
+                        round_type=round_name,
+                        question_text=d_item.get("question_text", ""),
+                        options_json=json.dumps(opts),
+                        ai_feedback=d_item.get("correct_option", "A")
+                    )
+                    q.save()
+                    saved_qs.append(q)
+
+            # If still needed, generate from AI
+            if len(saved_qs) == 0:
+                mcqs = ai_service.generate_company_mcqs(company.name, round_name, job_role=session.job_role, difficulty=session.difficulty)
+                for m in mcqs:
+                    opts = {
+                        "A": m.get("option_a", ""),
+                        "B": m.get("option_b", ""),
+                        "C": m.get("option_c", ""),
+                        "D": m.get("option_d", "")
+                    }
+                    q = InterviewQuestion(
+                        session_id=str(session.id),
+                        round_type=round_name,
+                        question_text=m.get("question_text", ""),
+                        options_json=json.dumps(opts),
+                        ai_feedback=m.get("correct_option", "A")
+                    )
+                    q.save()
+                    saved_qs.append(q)
 
             return jsonify({"questions": [{
                 "id": str(q.id),
                 "topic": round_name,
                 "question_text": q.question_text,
-                "options": json.loads(q.options_json),
+                "options": json.loads(q.options_json) if q.options_json else {},
                 "user_answer": None
             } for q in saved_qs]}), 200
 
         elif round_num == 3:
-            prob = ai_service.generate_company_coding_problem(company.name, job_role=session.job_role, difficulty=session.difficulty)
-            q = InterviewQuestion(
-                session_id=str(session.id),
-                round_type=round_name,
-                question_text=prob.get("description", ""),
-                options_json=json.dumps({
-                    "title": prob.get("title", "DSA Problem"),
-                    "difficulty": prob.get("difficulty", "Medium"),
-                    "example_input": prob.get("example_input", ""),
-                    "example_output": prob.get("example_output", "")
-                })
-            )
-            q.save()
+            if company_db_qs:
+                cq = company_db_qs[0]
+                q = InterviewQuestion(
+                    session_id=str(session.id),
+                    round_type=round_name,
+                    question_text=cq.question_text,
+                    options_json=cq.options_json or json.dumps({
+                        "title": cq.topic or "Coding Challenge",
+                        "difficulty": cq.difficulty or "Medium",
+                        "example_input": "",
+                        "example_output": ""
+                    })
+                )
+                q.save()
+            elif dataset_qs:
+                d_item = dataset_qs[0]
+                q = InterviewQuestion(
+                    session_id=str(session.id),
+                    round_type=round_name,
+                    question_text=d_item.get("description", ""),
+                    options_json=json.dumps({
+                        "title": d_item.get("title", "DSA Problem"),
+                        "difficulty": d_item.get("difficulty", "Medium"),
+                        "example_input": d_item.get("example_input", ""),
+                        "example_output": d_item.get("example_output", "")
+                    })
+                )
+                q.save()
+            else:
+                prob = ai_service.generate_company_coding_problem(company.name, job_role=session.job_role, difficulty=session.difficulty)
+                q = InterviewQuestion(
+                    session_id=str(session.id),
+                    round_type=round_name,
+                    question_text=prob.get("description", ""),
+                    options_json=json.dumps({
+                        "title": prob.get("title", "DSA Problem"),
+                        "difficulty": prob.get("difficulty", "Medium"),
+                        "example_input": prob.get("example_input", ""),
+                        "example_output": prob.get("example_output", "")
+                    })
+                )
+                q.save()
+
             return jsonify({"questions": [{
                 "id": str(q.id),
                 "topic": round_name,
                 "question_text": q.question_text,
-                "options": json.loads(q.options_json),
+                "options": json.loads(q.options_json) if q.options_json else {},
                 "user_answer": None
             }]}), 200
 
         elif round_num in [4, 5]:
-            question_text = ai_service.generate_company_first_question(company.name, round_name, session.job_role, session.difficulty)
+            if company_db_qs:
+                cq = company_db_qs[0]
+                question_text = cq.question_text
+            elif dataset_qs:
+                question_text = dataset_qs[0].get("question_text", "")
+            else:
+                question_text = ai_service.generate_company_first_question(company.name, round_name, session.job_role, session.difficulty)
+
             q = InterviewQuestion(
                 session_id=str(session.id),
                 round_type=round_name,
@@ -210,8 +362,10 @@ def get_round_questions(session_id, round_num):
                 "user_answer": None
             }]}), 200
 
+
     except Exception as e:
         return jsonify({"error": f"Failed to generate questions: {str(e)}"}), 500
+
 
 
 @company_bp.route('/session/<string:session_id>/submit-answers', methods=['POST'])

@@ -26,6 +26,29 @@ export default function App() {
   const [isLightMode, setIsLightMode] = useState(false);
   const [resumeInterviewSessionId, setResumeInterviewSessionId] = useState(null);
 
+  const checkAdminStatus = React.useCallback(() => {
+    // Decode token or verify with backend
+    if (!token) return false;
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      // Many standard JWT payloads have custom claims or boolean flag
+      const adminClaim = Boolean(
+        (payload.sub && payload.sub.is_admin) || 
+        payload.is_admin || 
+        payload.identity?.is_admin
+      );
+      if (adminClaim) {
+        setIsAdmin(true);
+      }
+      return adminClaim;
+    } catch (e) {
+      console.error('Failed to parse JWT payload:', e);
+      return false;
+    }
+  }, [token]);
+
   useEffect(() => {
     // Listen for auth expiration events from api client
     const handleAuthChange = () => {
@@ -41,30 +64,15 @@ export default function App() {
     }
 
     return () => window.removeEventListener('auth_change', handleAuthChange);
-  }, [token]);
+  }, [token, checkAdminStatus]);
 
-  const checkAdminStatus = () => {
-    // Decode token or verify with backend
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(window.atob(base64));
-      // Many standard JWT payloads have custom claims or boolean flag
-      if (payload.sub && payload.sub.is_admin) {
-        setIsAdmin(true);
-      } else if (payload.is_admin || payload.identity?.is_admin) {
-        setIsAdmin(true);
-      }
-    } catch (e) {
-      console.error('Failed to parse JWT payload:', e);
-    }
-  };
 
   const handleAuthSuccess = (isAdminUser) => {
     setToken(localStorage.getItem('access_token'));
     setIsAdmin(isAdminUser);
-    setActiveView('dashboard');
+    setActiveView(isAdminUser ? 'admin' : 'dashboard');
   };
+
 
   const logout = () => {
     localStorage.removeItem('access_token');
@@ -113,7 +121,16 @@ export default function App() {
       case 'profile':
         return <Profile />;
       case 'admin':
-        return isAdmin ? <Admin /> : <Dashboard setActiveView={setActiveView} startStandardInterview={startStandardInterview} />;
+        return isAdmin ? (
+          <Admin 
+            logout={logout} 
+            toggleTheme={toggleTheme} 
+            isLightMode={isLightMode} 
+            setActiveView={setActiveView} 
+          />
+        ) : (
+          <Dashboard setActiveView={setActiveView} startStandardInterview={startStandardInterview} />
+        );
       default:
         return <Dashboard setActiveView={setActiveView} startStandardInterview={startStandardInterview} />;
     }
@@ -121,6 +138,20 @@ export default function App() {
 
   if (!token || token === 'undefined' || token === 'null') {
     return <Auth onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  // Full-page dedicated layout for Administrator Portal (no candidate sidebar)
+  if (activeView === 'admin' && isAdmin) {
+    return (
+      <div className="min-h-screen w-screen bg-slate-950 text-white font-sans overflow-x-hidden">
+        <Admin 
+          logout={logout} 
+          toggleTheme={toggleTheme} 
+          isLightMode={isLightMode} 
+          setActiveView={setActiveView} 
+        />
+      </div>
+    );
   }
 
   return (
@@ -160,3 +191,4 @@ export default function App() {
     </div>
   );
 }
+

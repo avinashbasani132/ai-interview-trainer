@@ -5,8 +5,8 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from models import db
 from models.user import User
+
 
 def setup_admin():
     app = create_app('dev')

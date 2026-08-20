@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
-import { Trophy, Award, User, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+
 import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js';
 
 // Register Chart.js components
@@ -208,9 +209,9 @@ export default function Leaderboard() {
               </thead>
               <tbody className="divide-y divide-slate-850 text-xs">
                 {board.map((u, i) => {
-                  const isTop3 = i < 3;
                   const rankColor = i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-slate-500';
                   const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${u.rank}`;
+
 
                   return (
                     <tr key={i} className="hover:bg-slate-850/30 transition-colors">

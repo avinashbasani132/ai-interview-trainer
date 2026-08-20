@@ -14,14 +14,14 @@ import io
 import json
 import logging
 import re
-from datetime import datetime
 
-from flask import Blueprint, request, jsonify, send_file, Response
+from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from models import ResumeData
 from services.docx_parser import extract_text
 from services.ats_analyzer import ATSAnalyzer
+
 
 logger = logging.getLogger(__name__)
 resume_bp = Blueprint('resume', __name__)
@@ -173,10 +173,10 @@ def _generate_pdf_report(record: ResumeData) -> io.BytesIO:
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.colors import HexColor, white, black
+        from reportlab.lib.colors import HexColor, white
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-        from reportlab.lib.units import inch, cm
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+        from reportlab.lib.units import cm
+        from reportlab.lib.enums import TA_CENTER
     except ImportError:
         raise RuntimeError("reportlab not installed. Run: pip install reportlab")
 
@@ -197,24 +197,19 @@ def _generate_pdf_report(record: ResumeData) -> io.BytesIO:
                                   fontSize=8, leading=12, textColor=HexColor('#64748b'))
     score_label_style = ParagraphStyle('ScoreLabel', parent=styles['Normal'],
                                         fontSize=9, textColor=HexColor('#64748b'), alignment=TA_CENTER)
-    score_value_style = ParagraphStyle('ScoreValue', parent=styles['Normal'],
-                                        fontSize=28, textColor=HexColor('#1e40af'),
-                                        alignment=TA_CENTER, fontName='Helvetica-Bold')
 
     # Load data safely
     score = record.score or 0
     breakdown = _safe_json(record.ats_breakdown_json, {})
     contact = _safe_json(record.contact_info_json, {})
     skills = _safe_json(record.extracted_skills, [])
-    missing_sections = _safe_json(record.missing_sections_json, [])
     strengths = _safe_json(record.strengths_json, [])
     weaknesses = _safe_json(record.weaknesses_json, [])
     suggestions = _safe_json(record.suggestions_json, [])
-    missing_skills = _safe_json(record.missing_skills_json, [])
     questions_data = _safe_json(record.interview_questions_json, {})
     job_readiness = _safe_json(record.job_readiness_json, {})
-    grammar = _safe_json(record.grammar_analysis_json, {})
     roadmap = _safe_json(record.learning_roadmap_json, {})
+
 
     # Questions flat list
     if isinstance(questions_data, dict):

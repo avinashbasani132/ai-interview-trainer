@@ -1,13 +1,12 @@
 import sys
 import os
-import json
-import unittest.mock
 
 # Adjust import path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from models import db, User, InterviewSession, AptitudeQuestion, RoundResult
+from models import db, User, AptitudeQuestion
+
 
 app = create_app('dev')
 

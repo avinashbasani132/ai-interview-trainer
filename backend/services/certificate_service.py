@@ -1,12 +1,11 @@
-import os
 import io
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.colors import HexColor
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.graphics.shapes import Drawing, Circle, String, Rect, Group
+from reportlab.graphics.shapes import Drawing, Circle, String, Rect
 from reportlab.graphics.barcode.qr import QrCodeWidget
+
 
 # Certificate size in A4 Landscape: 841.89 pt x 595.27 pt (29.7cm x 21cm)
 PAGE_WIDTH = 841.89

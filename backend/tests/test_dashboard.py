@@ -1,13 +1,12 @@
 from app import create_app
-from models import db, User
-from flask import Flask
+from models import User
 
 app = create_app()
 
 with app.app_context():
     user = User.query.first()
     if user:
-        from routes.user import user_bp, get_dashboard_data
+        from routes.user import get_dashboard_data
         import unittest.mock
         
         with app.test_request_context('/api/user/dashboard'):
@@ -15,6 +14,7 @@ with app.app_context():
                 try:
                     res = get_dashboard_data()
                     print("Status:", res[1])
-                except Exception as e:
+                except Exception:
                     import traceback
                     traceback.print_exc()
+

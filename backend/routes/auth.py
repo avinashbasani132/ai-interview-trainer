@@ -3,6 +3,7 @@ from models import User
 from flask_jwt_extended import create_access_token
 from datetime import datetime
 
+
 auth_bp = Blueprint('auth', __name__)
 
 
@@ -31,12 +32,13 @@ def register():
         new_user = User(email=email)
         new_user.set_password(password)
         new_user.save()
-    except Exception as e:
+    except Exception:
         return jsonify({
             "success": False,
             "message": "Database Error",
             "error": "Failed to create user."
         }), 500
+
 
     access_token = create_access_token(identity=str(new_user.id), additional_claims={"is_admin": new_user.is_admin})
     return jsonify({

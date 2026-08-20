@@ -30,6 +30,7 @@ def _generate_unique_id():
 
 
 @certificate_bp.route('/api/certificate/generate', methods=['POST'])
+@certificate_bp.route('/api/certificates/generate', methods=['POST'])
 @jwt_required()
 def generate_certificate():
     """Validates eligibility, generates PDF, stores metadata in MongoDB."""
@@ -198,6 +199,7 @@ def generate_certificate():
 
 
 @certificate_bp.route('/api/certificate/my-certificates', methods=['GET'])
+@certificate_bp.route('/api/certificates/my-certificates', methods=['GET'])
 @jwt_required()
 def my_certificates():
     """Returns all certificates achieved by the user."""
@@ -219,6 +221,7 @@ def my_certificates():
 
 
 @certificate_bp.route('/api/certificate/download/<string:certificate_id>', methods=['GET'])
+@certificate_bp.route('/api/certificates/download/<string:certificate_id>', methods=['GET'])
 @jwt_required()
 def download_certificate(certificate_id):
     """Securely streams the generated PDF certificate."""

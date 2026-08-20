@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, RefreshCw, BookMarked } from 'lucide-react';
+import { AlertTriangle, ExternalLink, RefreshCw, BookMarked } from 'lucide-react';
 
 const RECOMMENDED_SUBJECTS = [
   { name: 'Python Mastery', category: 'Language', emoji: '🐍', url: 'https://docs.python.org/3/', isCore: false },
@@ -48,12 +48,13 @@ export default function Learning() {
       // Reload roadmap data
       const updatedRoad = await api.getRoadmap().catch(() => null);
       setRoadmap(updatedRoad);
-    } catch (e) {
-      alert('Failed to complete roadmap step.');
+    } catch (err) {
+      alert(err.message || 'Failed to complete roadmap step.');
     } finally {
       setRoadmapUpdating(prev => ({ ...prev, [stepId]: false }));
     }
   };
+
 
   if (loading) {
     return (

@@ -120,4 +120,11 @@ def execute_code():
 
             user.save()
 
-    return jsonify({"output": output}), 200
+    return jsonify({
+        "output": output,
+        "passed": passed,
+        "time_ms": time_ms,
+        "memory_kb": memory_kb,
+        "problem_id": problem_id
+    }), 200
+

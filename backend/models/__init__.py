@@ -50,7 +50,11 @@ class MongoEngineDB:
 
         # If host is a full URI string (e.g. mongodb+srv://...), connect via URI
         if host.startswith('mongodb'):
-            mongoengine.connect(host=host, db=db_name, uuidRepresentation='standard')
+            try:
+                import certifi
+                mongoengine.connect(host=host, db=db_name, uuidRepresentation='standard', tlsCAFile=certifi.where())
+            except Exception:
+                mongoengine.connect(host=host, db=db_name, uuidRepresentation='standard')
         else:
             mongoengine.connect(
                 db=db_name,
@@ -58,6 +62,7 @@ class MongoEngineDB:
                 port=port,
                 uuidRepresentation='standard'
             )
+
 
 
 db = MongoEngineDB()
@@ -74,3 +79,13 @@ from models.aptitude import AptitudeQuestion
 from models.community import CommunityPost, CommunityReply
 from models.chatbot import ChatMessage
 from models.admin import AdminAuditLog, SystemSetting, Question
+
+__all__ = [
+    "db", "MongoEngineDB", "User", "Achievement", "InterviewSession",
+    "RoundResult", "InterviewQuestion", "ResumeInterviewSession", "ResumeData",
+    "Certificate", "LearningRecommendation", "LearningRoadmap", "DSAProblem",
+    "DSASubmission", "Company", "CompanyQuestion", "AptitudeQuestion",
+    "CommunityPost", "CommunityReply", "ChatMessage", "AdminAuditLog",
+    "SystemSetting", "Question"
+]
+

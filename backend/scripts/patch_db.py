@@ -50,13 +50,14 @@ except Exception as e:
     
 try:
     c.execute('ALTER TABLE interview_sessions ADD COLUMN company_id INTEGER')
-except Exception as e:
+except Exception:
     pass
 
 try:
     c.execute('ALTER TABLE dsa_problems ADD COLUMN topic VARCHAR(100)')
-except Exception as e:
+except Exception:
     pass
+
 
 conn.commit()
 conn.close()

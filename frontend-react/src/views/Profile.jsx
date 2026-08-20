@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { User, ShieldAlert, Award, Sparkles, TrendingUp, Key, Calendar } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Key } from 'lucide-react';
+
 
 export default function Profile() {
   const [data, setData] = useState(null);
@@ -52,19 +53,21 @@ export default function Profile() {
     );
   }
 
-  const email = data ? data.email || 'user@example.com' : 'user@example.com';
+  const safeData = data || {};
+  const email = safeData.email || 'user@example.com';
   const emailInitial = email[0].toUpperCase();
   const certsEarned = certs.length;
   const latestCert = certs.length > 0 ? certs[0].id : 'None';
-  const highestScore = certs.length > 0 ? Math.max(...certs.map(c => c.overall_score)).toFixed(1) + '%' : 'N/A';
+  const scores = certs.map(c => c.overall_score || c.score || 0).filter(s => !isNaN(s));
+  const highestScore = scores.length > 0 ? Math.max(...scores).toFixed(1) + '%' : 'N/A';
 
   const statsItems = [
-    { label: 'Total Interviews', val: data.total_interviews || 0, icon: '📊' },
-    { label: 'Rounds Cleared', val: data.rounds_cleared || 0, icon: '✅' },
-    { label: 'Failed Attempts', val: data.failed_attempts || 0, icon: '❌' },
-    { label: 'DSA Solved', val: data.ml_job_prediction?.dsa_solved ?? 0, icon: '💻' },
-    { label: 'Current Streak', val: `${data.current_streak || 0} days`, icon: '🔥' },
-    { label: 'Max Streak', val: `${data.max_streak || 0} days`, icon: '⭐' }
+    { label: 'Total Interviews', val: safeData.total_interviews || 0, icon: '📊' },
+    { label: 'Rounds Cleared', val: safeData.rounds_cleared || 0, icon: '✅' },
+    { label: 'Failed Attempts', val: safeData.failed_attempts || 0, icon: '❌' },
+    { label: 'DSA Solved', val: safeData.ml_job_prediction?.dsa_solved ?? (safeData.dsa_problems_solved || 0), icon: '💻' },
+    { label: 'Current Streak', val: `${safeData.current_streak || 0} days`, icon: '🔥' },
+    { label: 'Max Streak', val: `${safeData.max_streak || 0} days`, icon: '⭐' }
   ];
 
   const perfItems = [
@@ -73,7 +76,7 @@ export default function Profile() {
     { label: 'HR Conversational Round', val: perfData['HR Round'] || 0, color: 'from-purple-500 to-purple-400', textColor: 'text-purple-400' }
   ];
 
-  const mlPred = data.ml_job_prediction || null;
+  const mlPred = safeData.ml_job_prediction || null;
 
   return (
     <div className="w-full space-y-8 animate-fade-in">
@@ -87,11 +90,12 @@ export default function Profile() {
           <p className="text-slate-400 text-xs">{email}</p>
           <div className="flex items-center gap-2 justify-center md:justify-start pt-1.5">
             <span className="text-[10px] bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-full text-indigo-300 font-bold">
-              {data.is_admin ? '🛡️ System Administrator' : 'Candidate Account'}
+              {safeData.is_admin ? '🛡️ System Administrator' : 'Candidate Account'}
             </span>
           </div>
         </div>
       </div>
+
 
       {error && (
         <div className="p-4 bg-red-950/40 border border-red-500/20 text-red-400 rounded-xl text-xs">

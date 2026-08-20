@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { MessageSquare, ThumbsUp, Plus, X, MessageCircle, Send, Calendar } from 'lucide-react';
+import { MessageSquare, Plus, X, MessageCircle, Send, Calendar } from 'lucide-react';
 
 export default function Community() {
   const [posts, setPosts] = useState([]);
@@ -46,10 +46,10 @@ export default function Community() {
           ...prev,
           [postId]: { loading: false, list: data.replies || [] }
         }));
-      } catch (e) {
+      } catch (err) {
         setReplies(prev => ({
           ...prev,
-          [postId]: { loading: false, list: [], error: 'Failed to load replies' }
+          [postId]: { loading: false, list: [], error: err.message || 'Failed to load replies' }
         }));
       }
     }
@@ -77,10 +77,11 @@ export default function Community() {
         }
         return p;
       }));
-    } catch (e) {
-      alert('Failed to post reply.');
+    } catch (err) {
+      alert(err.message || 'Failed to post reply.');
     }
   };
+
 
   const handleSubmitPost = async (e) => {
     e.preventDefault();

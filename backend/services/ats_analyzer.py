@@ -30,7 +30,8 @@ IMPORTANT: All scores are deterministic. Same file = same score. No randomness.
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Tuple
+
 
 logger = logging.getLogger(__name__)
 
@@ -586,8 +587,11 @@ class ATSAnalyzer:
             score = min(20.0, score + 1.5)
         if has_live_demo:
             score = min(20.0, score + 1.5)
+        if has_tech_mentioned:
+            score = min(20.0, score + 1.0)
         if has_quantified:
             score = min(20.0, score + 1.0)
+
 
         quality_signals = []
         if has_github_link:

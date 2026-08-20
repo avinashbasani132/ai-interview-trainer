@@ -1,7 +1,7 @@
 import argparse
-import sys
 from app import create_app
 from waitress import serve
+
 
 def parse_args():
     """

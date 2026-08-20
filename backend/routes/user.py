@@ -119,8 +119,10 @@ def get_user_history():
 
 
 @user_bp.route('/analytics/performance', methods=['GET'])
+@user_bp.route('/performance-analytics', methods=['GET'])
 @jwt_required()
 def get_performance_analytics():
+
     user_id = get_jwt_identity()
     user = User.objects(id=user_id).first()
     if not user:

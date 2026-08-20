@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import Editor from '@monaco-editor/react';
-import { Code, Trophy, Play, CheckCircle, Terminal } from 'lucide-react';
+import { Trophy, Play, Terminal } from 'lucide-react';
+
 
 const STARTER_CODES = {
   python: `def solution(nums, target):

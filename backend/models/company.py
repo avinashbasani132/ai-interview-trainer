@@ -16,8 +16,16 @@ class Company(db.Document):
 
 
 class CompanyQuestion(db.Document):
-    meta = {'collection': 'company_questions', 'indexes': ['company_id']}
+    meta = {'collection': 'company_questions', 'indexes': ['company_id', 'round_type', 'company_name']}
 
     company_id = db.StringField(required=True)
-    round_type = db.StringField(required=True)    # MCQ, Tech, HR
+    company_name = db.StringField()
+    round_type = db.StringField(required=True)    # Aptitude, Technical MCQ, Coding, Technical AI, HR
+    topic = db.StringField()
+    difficulty = db.StringField(default="Medium")
     question_text = db.StringField(required=True)
+    options_json = db.StringField()               # JSON string of options {"A": ..., "B": ..., "C": ..., "D": ...}
+    correct_option = db.StringField()             # "A", "B", "C", "D"
+    expected_answer = db.StringField()
+    evaluation_criteria = db.StringField()
+

@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { 
   Upload, FileText, Download, Play, CheckCircle2, AlertTriangle, 
-  ChevronRight, Brain, Sparkles, TrendingUp, HelpCircle 
+  ChevronRight, Brain 
 } from 'lucide-react';
+
 
 export default function Resume({ setActiveView, setResumeInterviewSessionId }) {
   const [history, setHistory] = useState([]);

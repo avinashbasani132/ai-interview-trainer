@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
 from models import db, User, ResumeData
-from services.docx_parser import extract_text
+
 
 class TestResumeBoundaries(unittest.TestCase):
     @classmethod

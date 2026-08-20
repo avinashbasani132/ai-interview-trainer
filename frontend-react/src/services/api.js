@@ -179,10 +179,19 @@ export const api = {
     method: 'POST',
     body: { round }
   }),
-  getAdminQuestions: () => request('/admin/questions'),
+  getAdminQuestions: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.company_id) query.append('company_id', params.company_id);
+    if (params.round_type) query.append('round_type', params.round_type);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request(`/admin/questions${qs}`);
+  },
   createAdminQuestion: (questionData) => request('/admin/questions', {
     method: 'POST',
     body: questionData
+  }),
+  deleteAdminQuestion: (questionId) => request(`/admin/questions/${questionId}`, {
+    method: 'DELETE'
   }),
   getAdminCompanies: () => request('/admin/companies'),
   createAdminCompany: (companyData) => request('/admin/companies', {
