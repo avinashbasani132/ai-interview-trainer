@@ -58,5 +58,8 @@ class ProductionConfig(Config):
 # Helper mapping to seamlessly switch configurations
 config_by_name = {
     "dev": DevelopmentConfig,
-    "prod": ProductionConfig
+    "development": DevelopmentConfig,
+    "prod": ProductionConfig,
+    "production": ProductionConfig
 }
+

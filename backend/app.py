@@ -30,11 +30,14 @@ from config import config_by_name
 from models import db
 
 
-def create_app(config_name="dev"):
+def create_app(config_name=None):
     """
     Application Factory Pattern.
     Creates and configures the Flask application with MongoDB via MongoEngine.
     """
+    if not config_name:
+        config_name = os.getenv("FLASK_ENV", "prod" if os.getenv("RENDER") else "dev")
+
     app = Flask(
         __name__,
         static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend-react/dist')),
@@ -43,7 +46,8 @@ def create_app(config_name="dev"):
     )
 
     # Load configuration from the config dictionary
-    app.config.from_object(config_by_name.get(config_name, config_by_name["dev"]))
+    config_obj = config_by_name.get(str(config_name).lower(), config_by_name.get("prod" if os.getenv("RENDER") else "dev"))
+    app.config.from_object(config_obj)
 
     # Initialize Extensions
     CORS(app)
