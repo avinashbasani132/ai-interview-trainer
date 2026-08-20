@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Download, ExternalLink, Calendar, Mail } from 'lucide-react';
-
+import { Download, ExternalLink, Calendar, Mail, Award, CheckCircle, RefreshCw } from 'lucide-react';
 
 export default function Certificates({ setActiveView }) {
   const [certs, setCerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     loadCertificates();
@@ -25,14 +27,31 @@ export default function Certificates({ setActiveView }) {
     }
   };
 
-  const handleDownload = (certId, filename) => {
-    const downloadUrl = api.getCertificateDownloadUrl(certId);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = filename || `Certificate_${certId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleClaim = async () => {
+    try {
+      setClaiming(true);
+      setError('');
+      setSuccessMsg('');
+      const res = await api.claimLatestCertificate();
+      setSuccessMsg(res.message || 'Verified Certificate Issued Successfully!');
+      await loadCertificates();
+    } catch (e) {
+      setError(e.message || 'Failed to issue certificate');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleDownload = async (certId, filename) => {
+    try {
+      setDownloadingId(certId);
+      setError('');
+      await api.downloadCertificatePdf(certId, filename);
+    } catch (e) {
+      setError('Download failed: ' + (e.message || 'Server error'));
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const shareLinkedIn = (certId) => {
@@ -59,35 +78,73 @@ export default function Certificates({ setActiveView }) {
   return (
     <div className="w-full space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4">
-        <h2 className="text-3xl font-extrabold text-white font-outfit">My Credentials</h2>
-        <p className="text-slate-400 mt-1 text-sm">Access your verified credentials, download official PDF certificates, and share accomplishments with employers.</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-white font-outfit">My Credentials</h2>
+          <p className="text-slate-400 mt-1 text-sm">Access your verified credentials, download official PDF certificates, and share accomplishments with employers.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={loadCertificates}
+            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl transition"
+            title="Refresh Certificates"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button 
+            disabled={claiming}
+            onClick={handleClaim}
+            className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/25 disabled:opacity-50"
+          >
+            <Award className="w-4 h-4" />
+            {claiming ? 'Generating Certificate...' : 'Claim / Issue Certificate'}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-950/40 border border-red-500/20 text-red-400 rounded-xl text-xs">
-          {error}
+        <div className="p-4 bg-red-950/40 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="p-4 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span>{successMsg}</span>
         </div>
       )}
 
       {certs.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-12 text-center max-w-xl mx-auto mt-10 space-y-4">
+        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-12 text-center max-w-xl mx-auto mt-10 space-y-4 shadow-xl">
           <span className="text-5xl block">📜</span>
-          <h3 className="text-xl font-bold text-white">No Certificates Earned Yet</h3>
+          <h3 className="text-xl font-bold text-white font-outfit">No Certificates Earned Yet</h3>
           <p className="text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
             Complete either a standard placement assessment track (4 Rounds) or a resume-based AI interview with an overall score of 70% or higher to receive your verified certificate credentials.
           </p>
-          <button 
-            onClick={() => setActiveView('rounds')}
-            className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/25"
-          >
-            Start Assessment Round
-          </button>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button 
+              disabled={claiming}
+              onClick={handleClaim}
+              className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/25 transition disabled:opacity-50"
+            >
+              {claiming ? 'Generating...' : 'Issue Verified Certificate'}
+            </button>
+            <button 
+              onClick={() => setActiveView('rounds')}
+              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/25"
+            >
+              Start Assessment Round
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {certs.map(c => {
             const dateStr = new Date(c.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+            const isDownloading = downloadingId === c.id;
+
             return (
               <div key={c.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-xl hover:border-indigo-500/50 transition-all">
                 
@@ -122,7 +179,7 @@ export default function Certificates({ setActiveView }) {
                     </div>
                   </div>
                   
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1 border-t border-slate-850 pt-3">
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1 border-t border-slate-800 pt-3">
                     <Calendar className="w-3.5 h-3.5 text-slate-500" />
                     Issued: {dateStr}
                   </div>
@@ -131,11 +188,12 @@ export default function Certificates({ setActiveView }) {
                 {/* Share/Actions Grid */}
                 <div className="grid grid-cols-2 gap-2 mt-5">
                   <button 
+                    disabled={isDownloading}
                     onClick={() => handleDownload(c.id, c.pdf_filename)}
-                    className="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition-colors flex items-center justify-center gap-1"
+                    className="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Download PDF
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                   </button>
                   <button 
                     onClick={() => window.open(`/verify-certificate/${c.id}`, '_blank')}

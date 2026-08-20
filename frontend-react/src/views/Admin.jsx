@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { 
-  ShieldAlert, Users, Award, Layers, HelpCircle, 
+  ShieldAlert, Users, Award, HelpCircle, 
   Activity, BarChart3, AlertCircle, Trash2, Plus, 
   Building, CheckCircle2, Search, Filter, RefreshCw,
-  Sun, Moon, LogOut, ArrowLeft
+  Sun, Moon, LogOut, ArrowLeft, Play, X, ChevronRight,
+  ChevronLeft, Eye, Code, MessageSquare, BookOpen, Check
 } from 'lucide-react';
+
 
 export default function Admin({ logout, toggleTheme, isLightMode, setActiveView }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -20,6 +22,13 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Round Tester Modal states
+  const [activeTestRound, setActiveTestRound] = useState(null);
+  const [testQuestions, setTestQuestions] = useState([]);
+  const [currentTestQIndex, setCurrentTestQIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
 
   // Filtering states for Question Configs
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('all');
@@ -47,7 +56,6 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
   const [newCompDesc, setNewCompDesc] = useState('');
   const [newCompLogo, setNewCompLogo] = useState('');
 
-
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -59,89 +67,147 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
       const [statsData, compData, logData] = await Promise.all([
         api.getAdminStats().catch(() => null),
         api.getAdminCompanies().catch(() => ({ companies: [] })),
-        api.getAdminAuditLogs().catch(() => ({ logs: [] }))
+        api.getAdminLogs().catch(() => ({ logs: [] }))
       ]);
 
       if (statsData) setStats(statsData);
-      if (compData && compData.companies) setCompanies(compData.companies);
-      if (logData && logData.logs) setAuditLogs(logData.logs);
+      if (compData?.companies) setCompanies(compData.companies);
+      if (logData?.logs) setAuditLogs(logData.logs);
     } catch (err) {
-      setError(err.message || 'Failed to initialize administrator telemetry. Ensure you have admin privileges.');
+      setError(err.message || 'Failed to initialize administrative telemetry.');
     } finally {
       setLoading(false);
     }
   };
 
-
-  const handleTabChange = async (tab) => {
-    setActiveTab(tab);
-    setSuccessMsg('');
+  const handleTabChange = async (tabId) => {
+    setActiveTab(tabId);
     setError('');
-    setLoading(true);
+    setSuccessMsg('');
+
     try {
-      if (tab === 'dashboard') {
-        const statsData = await api.getAdminStats();
-        setStats(statsData);
-      } else if (tab === 'users') {
-        const uList = await api.getAdminUsers();
-        setUsers(uList.users || []);
-      } else if (tab === 'questions') {
-        await refreshQuestions(selectedCompanyFilter, selectedRoundFilter);
-        if (companies.length === 0) {
-          const cList = await api.getAdminCompanies();
-          setCompanies(cList.companies || []);
-        }
-      } else if (tab === 'companies') {
-        const cList = await api.getAdminCompanies();
-        setCompanies(cList.companies || []);
-      } else if (tab === 'certificates') {
-        const certList = await api.getAdminCertificates();
-        setCerts(certList.certificates || []);
-      } else if (tab === 'system') {
-        const logs = await api.getAdminAuditLogs();
-        setAuditLogs(logs.logs || []);
+      if (tabId === 'users' && users.length === 0) {
+        const data = await api.getAdminUsers();
+        setUsers(data.users || []);
+      } else if (tabId === 'questions' && questions.length === 0) {
+        await refreshQuestions('all', 'all');
+      } else if (tabId === 'certificates' && certs.length === 0) {
+        const data = await api.getAdminCertificates();
+        setCerts(data.certificates || []);
+      } else if (tabId === 'system') {
+        const data = await api.getAdminLogs();
+        setAuditLogs(data.logs || []);
       }
-    } catch (e) {
-      console.error(e);
-      setError(e.message || 'Error loading tab data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refreshQuestions = async (compId, roundType) => {
-    const qList = await api.getAdminQuestions({
-      company_id: compId,
-      round_type: roundType
-    });
-    setQuestions(qList.questions || []);
-  };
-
-  const handleFilterQuestions = async (compId, roundType) => {
-    setSelectedCompanyFilter(compId);
-    setSelectedRoundFilter(roundType);
-    setLoading(true);
-    try {
-      await refreshQuestions(compId, roundType);
     } catch (err) {
-      setError(err.message || 'Failed to filter questions');
-    } finally {
-      setLoading(false);
+      setError(err.message || `Failed to load ${tabId} details.`);
     }
   };
 
-
-  const handleBypassRound = async (round) => {
+  const refreshQuestions = async (compId, round) => {
     try {
-      setActionLoading(true);
-      await api.bypassRound(round);
-      setSuccessMsg(`Successfully bypassed system assessment to round ${round}!`);
-      const s = await api.getAdminStats();
-      setStats(s);
-    } catch (e) {
-      setError('Bypass request failed: ' + e.message);
+      const data = await api.getAdminQuestions(compId, round);
+      setQuestions(data.questions || []);
+    } catch (err) {
+      setError(err.message || 'Failed to refresh question inventory');
+    }
+  };
+
+  const handleFilterQuestions = async (compId, round) => {
+    setSelectedCompanyFilter(compId);
+    setSelectedRoundFilter(round);
+    await refreshQuestions(compId, round);
+  };
+
+  // Open Interactive Live Round Question Player Modal
+  const handleOpenRoundTest = async (rNum) => {
+    try {
+      setTestLoading(true);
+      setActiveTestRound(rNum);
+      setCurrentTestQIndex(0);
+      setSelectedOption(null);
+      setShowAnswer(false);
+      setError('');
+
+      // Also register session bypass on backend
+      api.bypassRound(rNum).catch(() => {});
+
+      if (rNum === 1) {
+        // Fetch Aptitude Questions
+        const res = await api.startAptitude();
+        setTestQuestions(res.questions || []);
+      } else if (rNum === 2) {
+        // Fetch Technical MCQ Questions
+        const res = await api.getAdminQuestions('all', 'Technical MCQ');
+        if (res.questions && res.questions.length > 0) {
+          setTestQuestions(res.questions);
+        } else {
+          setTestQuestions([
+            {
+              id: 't1',
+              topic: 'System Design & Architecture',
+              difficulty: 'Medium',
+              question_text: 'How would you design a distributed rate limiter handling 100k requests/second across multiple regional data centers?',
+              options: {
+                A: 'Local in-memory counters on each application instance',
+                B: 'Centralized Redis cluster with sliding window log and token bucket algorithm',
+                C: 'Relational SQL database with row-level locks on every request',
+                D: 'Reject all incoming traffic exceeding instant CPU threshold'
+              },
+              correct_option: 'B',
+              expected_answer: 'A centralized Redis cluster with sliding window counter ensures atomic synchronized rate limiting with sub-millisecond latency across instances.'
+            },
+            {
+              id: 't2',
+              topic: 'Operating Systems & Concurrency',
+              difficulty: 'Medium',
+              question_text: 'What is the primary difference between a Process and a Thread in modern multi-core operating systems?',
+              options: {
+                A: 'Threads have separate memory address spaces while processes share memory',
+                B: 'Processes share memory address space while threads maintain separate spaces',
+                C: 'Threads of the same process share heap, global variables, and code, but maintain separate call stacks and registers',
+                D: 'Processes cannot communicate while threads communicate automatically'
+              },
+              correct_option: 'C',
+              expected_answer: 'Threads share the text, data, and heap segments of the parent process while maintaining their own private stack and register contexts.'
+            }
+          ]);
+        }
+      } else if (rNum === 3) {
+        // Fetch DSA Problem
+        const res = await api.getDailyDSA();
+        setTestQuestions([
+          res || {
+            title: 'Two Sum (Optimal Hash Map Lookup)',
+            difficulty: 'Easy',
+            topic: 'Arrays & Hashing',
+            description: 'Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`. Each input has exactly one solution.',
+            starter_code: 'def twoSum(nums: list[int], target: int) -> list[int]:\n    seen = {}\n    for i, n in enumerate(nums):\n        diff = target - n\n        if diff in seen:\n            return [seen[diff], i]\n        seen[n] = i\n    return []\n',
+            expected_answer: 'Time Complexity: O(N), Space Complexity: O(N) using a single-pass Hash Table.'
+          }
+        ]);
+      } else if (rNum === 4) {
+        // HR Behavioral Situations
+        setTestQuestions([
+          {
+            id: 'hr1',
+            topic: 'Conflict Resolution (STAR Method)',
+            difficulty: 'Medium',
+            question_text: 'Describe a situation where you had a strong technical disagreement with a team lead or colleague. How did you handle it and what was the outcome?',
+            expected_answer: 'STAR Rubric: Look for objective data-driven argumentation, active listening, willingness to disagree and commit, and focus on customer/business impact.'
+          },
+          {
+            id: 'hr2',
+            topic: 'Handling Failure & Deadlines',
+            difficulty: 'Medium',
+            question_text: 'Tell me about a time when a project release went wrong or missed a critical deadline. What did you learn and how did you prevent recurring issues?',
+            expected_answer: 'Evaluation Criteria: Accountability, transparent blameless post-mortem methodology, root cause analysis (RCA), and proactive mitigation strategies.'
+          }
+        ]);
+      }
+    } catch (err) {
+      setError('Could not load test round questions: ' + (err.message || 'Server error'));
     } finally {
-      setActionLoading(false);
+      setTestLoading(false);
     }
   };
 
@@ -152,41 +218,31 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
     setActionLoading(true);
     setError('');
     try {
-      const isMCQ = newQRound === 'Aptitude' || newQRound === 'Technical MCQ';
-      const options = isMCQ ? {
-        A: optA || 'Option A',
-        B: optB || 'Option B',
-        C: optC || 'Option C',
-        D: optD || 'Option D'
-      } : (newQRound === 'Coding' ? {
-        title: newQTopic || 'Coding Problem',
-        difficulty: newQDiff,
-        example_input: optA || '',
-        example_output: optB || ''
-      } : null);
-
-      const targetCompObj = companies.find(c => c.id === targetCompanyId);
+      const options = (newQRound === 'Aptitude' || newQRound === 'Technical MCQ') ? {
+        A: optA,
+        B: optB,
+        C: optC,
+        D: optD
+      } : {};
 
       await api.createAdminQuestion({
         company_id: targetCompanyId || null,
-        company_name: targetCompObj ? targetCompObj.name : null,
         round_type: newQRound,
-        topic: newQTopic,
+        topic: newQTopic.trim(),
         difficulty: newQDiff,
         question_text: newQText.trim(),
-        options: options,
-        correct_option: correctOpt,
-        expected_answer: expectedAnswer
+        options,
+        correct_option: (newQRound === 'Aptitude' || newQRound === 'Technical MCQ') ? correctOpt : '',
+        expected_answer: expectedAnswer.trim()
       });
 
-      setSuccessMsg(`Question successfully saved to ${targetCompObj ? targetCompObj.name : 'General'} Bank!`);
+      setSuccessMsg('Structured question successfully added to question bank!');
       setNewQText('');
       setOptA('');
       setOptB('');
       setOptC('');
       setOptD('');
       setExpectedAnswer('');
-
       await refreshQuestions(selectedCompanyFilter, selectedRoundFilter);
     } catch (err) {
       setError(err.message || 'Failed to add question');
@@ -220,7 +276,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
         name: newCompName.trim(),
         category: newCompCategory,
         difficulty: newCompDifficulty,
-        duration: newCompDuration,
+        duration: 45,
         description: newCompDesc.trim() || `Prepare for ${newCompName}'s comprehensive assessment cycle.`,
         logo_url: newCompLogo.trim() || 'https://img.icons8.com/color/144/company.png'
       });
@@ -249,102 +305,105 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
     return text.includes(sq) || topic.includes(sq) || compName.includes(sq);
   });
 
+  const currentQ = testQuestions[currentTestQIndex] || null;
+
   return (
-    <div className="min-h-screen w-full bg-slate-950 text-white p-6 md:p-10 space-y-8 animate-fade-in">
-      {/* Title & Portal Header */}
-      <div className="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 shadow-lg shadow-amber-500/5">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black text-white tracking-tight font-outfit">
-                Administrator Portal
-              </h2>
-              <p className="text-slate-400 text-xs md:text-sm mt-0.5">
-                Centralized system controls, 33-company question banks, telemetry & candidate monitoring.
-              </p>
-            </div>
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-6 lg:p-8 select-none">
+      
+      {/* Full-Page Admin Top Bar */}
+      <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl text-amber-400 shadow-lg shadow-amber-500/10">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-outfit flex items-center gap-2">
+              Administrator Portal
+              <span className="px-2.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                Full Controls
+              </span>
+            </h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+              Centralized system controls, 33-company question banks, telemetry & candidate monitoring.
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Refresh Button */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => handleTabChange(activeTab)}
-            disabled={loading || actionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all shadow-md hover:text-white"
+            onClick={loadInitialData}
+            disabled={loading}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow"
+            title="Refresh All Telemetry"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
 
-          {/* Theme Toggle Button */}
           {toggleTheme && (
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all hover:text-white"
-              title="Toggle Theme"
+              className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition shadow"
+              title="Toggle Light/Dark Theme"
             >
-              {isLightMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
-              <span>{isLightMode ? 'Dark Mode' : 'Light Mode'}</span>
+              {isLightMode ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
             </button>
           )}
 
-          {/* Switch to Candidate App Button */}
           {setActiveView && (
             <button
               onClick={() => setActiveView('dashboard')}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-indigo-600/10 border border-indigo-500/30 hover:bg-indigo-600/20 text-indigo-300 rounded-xl text-xs font-semibold transition-all"
+              className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Candidate App</span>
+              Candidate App
             </button>
           )}
 
-          {/* Logout Button */}
           {logout && (
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-rose-600/10 border border-rose-500/30 hover:bg-rose-600/20 text-rose-400 rounded-xl text-xs font-semibold transition-all"
+              className="px-3.5 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
+              Logout
             </button>
           )}
         </div>
       </div>
 
-
       {/* Global Alerts */}
       {error && (
-        <div className="p-4 bg-red-950/40 border border-red-500/30 text-red-300 rounded-xl flex items-center justify-between gap-3 text-sm animate-slide-in">
+        <div className="mt-4 p-4 bg-red-950/40 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError('')} className="text-red-400 hover:text-red-200 text-xs font-bold">Dismiss</button>
+          <button onClick={() => setError('')} className="text-red-400 font-bold ml-2">✕</button>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 rounded-xl flex items-center justify-between gap-3 text-sm animate-slide-in">
+        <div className="mt-4 p-4 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
             <span>{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-200 text-xs font-bold">Dismiss</button>
+          <button onClick={() => setSuccessMsg('')} className="text-emerald-400 font-bold ml-2">✕</button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Navigation Tabs Sidebar */}
-        <div className="space-y-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl h-fit backdrop-blur shadow-xl">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-extrabold px-3 mb-3">Management Options</p>
+      {/* Main Administrative Layout Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6 flex-1">
+        
+        {/* Left Side: Navigation Tabs */}
+        <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1.5 h-fit shadow-xl">
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider px-3.5 py-2">
+            Management Options
+          </p>
           {[
             { id: 'dashboard', label: 'Telemetry & Overview', icon: BarChart3 },
-            { id: 'companies', label: 'Company Placements (33)', icon: Layers },
+            { id: 'companies', label: `Company Placements (${companies.length})`, icon: Building },
             { id: 'questions', label: 'Question Bank Configs', icon: HelpCircle },
             { id: 'users', label: 'Registered Candidates', icon: Users },
             { id: 'certificates', label: 'Issued Credentials', icon: Award },
@@ -398,26 +457,53 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
                 <div className="p-6 text-center text-slate-500">Loading system metrics...</div>
               )}
 
-              {/* Developer Test & Verification Bypass */}
+              {/* Developer Interactive Round Assessment Controls */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-xl">
-                <div className="flex items-center gap-2 text-white font-bold text-base">
-                  <Activity className="w-5 h-5 text-indigo-400" />
-                  <h3>Developer Assessment Test Controls</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white font-bold text-base font-outfit">
+                    <Activity className="w-5 h-5 text-indigo-400" />
+                    <h3>Assessment Round Question Testers & Bypasses</h3>
+                  </div>
+                  <span className="text-[10px] text-indigo-400 font-mono font-bold bg-indigo-950/60 border border-indigo-800/60 px-2.5 py-1 rounded-full">
+                    Live Engines
+                  </span>
                 </div>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  Trigger instant round bypasses to directly evaluate Round 1 (Aptitude), Round 2 (Technical MCQ), Round 3 (Coding Arena), or Round 4/5 (Technical AI & HR) interview engines during testing.
+                  Click any assessment round below to inspect its structured questions, test option selections, reveal solutions, and test the real-time AI evaluation engine.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {[1, 2, 3, 4].map(rNum => (
-                    <button
-                      key={rNum}
-                      disabled={actionLoading}
-                      onClick={() => handleBypassRound(rNum)}
-                      className="py-3 px-4 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500 text-slate-200 font-bold text-xs rounded-xl transition shadow flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      Bypass to Round {rNum}
-                    </button>
-                  ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
+                  {[
+                    { rNum: 1, title: 'Round 1: Aptitude', desc: '25 MCQ Questions', pass: '60% Pass Mark', icon: HelpCircle, color: 'from-blue-600 to-indigo-600' },
+                    { rNum: 2, title: 'Round 2: Technical AI', desc: 'System Design & CS', pass: '70% Pass Mark', icon: MessageSquare, color: 'from-purple-600 to-indigo-600' },
+                    { rNum: 3, title: 'Round 3: Code Arena', desc: 'DSA Problem & Monaco', pass: '70% Pass Mark', icon: Code, color: 'from-emerald-600 to-teal-600' },
+                    { rNum: 4, title: 'Round 4: HR Video', desc: 'STAR Behavioral Rubric', pass: '70% Pass Mark', icon: Award, color: 'from-amber-600 to-orange-600' }
+                  ].map(r => {
+                    const Icon = r.icon;
+                    return (
+                      <div key={r.rNum} className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-3 hover:border-slate-700 transition shadow">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="p-2 bg-slate-900 rounded-lg text-indigo-400 border border-slate-800">
+                              <Icon className="w-4 h-4" />
+                            </span>
+                            <span className="text-[9px] text-slate-500 font-bold">{r.pass}</span>
+                          </div>
+                          <h4 className="font-bold text-white text-xs mt-2.5">{r.title}</h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
+                        </div>
+
+                        <button
+                          disabled={testLoading}
+                          onClick={() => handleOpenRoundTest(r.rNum)}
+                          className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-[11px] rounded-lg transition shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          Inspect & Test Questions
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -625,7 +711,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
 
               {/* Add New Question Form */}
               <form onSubmit={handleCreateQuestion} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-xl">
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <h3 className="font-bold text-white text-base flex items-center gap-2 font-outfit">
                   <Plus className="w-5 h-5 text-indigo-400" />
                   Add Structured Question to Bank
                 </h3>
@@ -846,7 +932,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
           {activeTab === 'users' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <div className="p-5 border-b border-slate-850 flex items-center justify-between">
-                <h3 className="font-bold text-white text-base">Registered Candidates ({users.length})</h3>
+                <h3 className="font-bold text-white text-base font-outfit">Registered Candidates ({users.length})</h3>
                 <span className="text-xs text-slate-400">Real-time candidate telemetry and employability ratings</span>
               </div>
 
@@ -900,7 +986,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <div className="p-5 border-b border-slate-850 flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-white text-base">Issued Credentials ({certs.length})</h3>
+                  <h3 className="font-bold text-white text-base font-outfit">Issued Credentials ({certs.length})</h3>
                   <p className="text-slate-400 text-xs mt-0.5">Cryptographically signed placement certificates & assessment records.</p>
                 </div>
               </div>
@@ -913,7 +999,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
                       <th className="p-3.5">Candidate</th>
                       <th className="p-3.5">Interview Track</th>
                       <th className="p-3.5 text-center">Score</th>
-                      <th className="p-3.5 text-right">Issue Date</th>
+                      <th className="p-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-850 text-xs">
@@ -926,8 +1012,13 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
                         </td>
                         <td className="p-3.5 text-slate-300 font-medium">{c.type || 'Standard SDE Track'}</td>
                         <td className="p-3.5 text-center font-bold text-emerald-400">{c.score}%</td>
-                        <td className="p-3.5 text-right text-slate-400 text-[10px]">
-                          {c.issue_date ? new Date(c.issue_date).toLocaleDateString() : 'N/A'}
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => api.downloadCertificatePdf(c.id, `Certificate_${c.id}.pdf`)}
+                            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition"
+                          >
+                            Download PDF
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -947,7 +1038,7 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white">System Audit & Security Trails</h3>
+                  <h3 className="text-base font-bold text-white font-outfit">System Audit & Security Trails</h3>
                   <p className="text-slate-400 text-xs">Full immutable telemetry of administrator modifications and candidate assessments.</p>
                 </div>
                 <span className="px-3 py-1 bg-emerald-950/60 border border-emerald-800 text-emerald-400 rounded-full text-[10px] font-bold flex items-center gap-1.5">
@@ -974,6 +1065,193 @@ export default function Admin({ logout, toggleTheme, isLightMode, setActiveView 
 
         </div>
       </div>
+
+      {/* INTERACTIVE ROUND QUESTION PLAYER & TESTER MODAL */}
+      {activeTestRound && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-slide-in">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-full text-xs font-bold uppercase tracking-wider">
+                  Round {activeTestRound} Question Tester
+                </span>
+                {testQuestions.length > 0 && (
+                  <span className="text-xs text-slate-400 font-mono">
+                    Question {currentTestQIndex + 1} of {testQuestions.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {setActiveView && (
+                  <button
+                    onClick={() => {
+                      setActiveTestRound(null);
+                      setActiveView('rounds');
+                    }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl transition shadow"
+                  >
+                    Launch in Candidate Mode
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveTestRound(null)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {testLoading ? (
+                <div className="py-16 text-center space-y-3">
+                  <div className="loader mx-auto"></div>
+                  <p className="text-xs text-slate-400">Fetching live assessment questions...</p>
+                </div>
+              ) : currentQ ? (
+                <div className="space-y-5">
+                  {/* Topic & Metadata */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-indigo-400 font-semibold flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      {currentQ.topic || currentQ.category || 'General CS Topic'}
+                    </span>
+                    <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] font-bold">
+                      {currentQ.difficulty || 'Standard'}
+                    </span>
+                  </div>
+
+                  {/* Question Text */}
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800">
+                    <h3 className="text-base sm:text-lg font-bold text-white leading-relaxed">
+                      {currentQ.question_text || currentQ.description || currentQ.title}
+                    </h3>
+                  </div>
+
+                  {/* MCQ Options (for Round 1 and Round 2) */}
+                  {currentQ.options && (
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Select an option to test answer response:</p>
+                      {Object.entries(currentQ.options).map(([optKey, optVal]) => {
+                        const isSelected = selectedOption === optKey;
+                        const isCorrect = currentQ.correct_option === optKey;
+                        let btnStyle = 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500';
+
+                        if (showAnswer) {
+                          if (isCorrect) {
+                            btnStyle = 'bg-emerald-950/80 border-emerald-500 text-emerald-200 font-bold shadow-lg shadow-emerald-950/50';
+                          } else if (isSelected && !isCorrect) {
+                            btnStyle = 'bg-red-950/80 border-red-500 text-red-300';
+                          }
+                        } else if (isSelected) {
+                          btnStyle = 'bg-indigo-950 border-indigo-500 text-white font-bold';
+                        }
+
+                        return (
+                          <button
+                            key={optKey}
+                            onClick={() => setSelectedOption(optKey)}
+                            className={`w-full p-4 rounded-xl border text-left text-xs transition flex items-start gap-3 ${btnStyle}`}
+                          >
+                            <span className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
+                              {optKey}
+                            </span>
+                            <span className="flex-1 mt-0.5 leading-relaxed">
+                              {typeof optVal === 'string' ? optVal : JSON.stringify(optVal)}
+                            </span>
+                            {showAnswer && isCorrect && (
+                              <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Coding Problem Box (for Round 3) */}
+                  {currentQ.starter_code && (
+                    <div className="space-y-3">
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Starter Template & Code Runner:</p>
+                      <pre className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto leading-relaxed">
+                        <code>{currentQ.starter_code}</code>
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Toggle Explanation & Solution */}
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setShowAnswer(!showAnswer)}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition flex items-center gap-2"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                      {showAnswer ? 'Hide Solution Logic' : 'Reveal Correct Answer & Logic'}
+                    </button>
+
+                    {showAnswer && (
+                      <div className="mt-3 p-4 bg-emerald-950/30 border border-emerald-500/20 rounded-xl text-xs space-y-2 animate-fade-in">
+                        {currentQ.correct_option && (
+                          <p className="font-bold text-emerald-400">
+                            Correct Option: Option {currentQ.correct_option}
+                          </p>
+                        )}
+                        <p className="text-slate-300 leading-relaxed">
+                          {currentQ.expected_answer || currentQ.explanation || 'Question accurately calibrated against placement syllabus standards.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 italic">
+                  No questions available for this round.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Navigation */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <button
+                disabled={currentTestQIndex === 0}
+                onClick={() => {
+                  setCurrentTestQIndex(prev => prev - 1);
+                  setSelectedOption(null);
+                  setShowAnswer(false);
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl transition flex items-center gap-1 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">
+                  {currentTestQIndex + 1} / {testQuestions.length || 1}
+                </span>
+              </div>
+
+              <button
+                disabled={currentTestQIndex >= testQuestions.length - 1}
+                onClick={() => {
+                  setCurrentTestQIndex(prev => prev + 1);
+                  setSelectedOption(null);
+                  setShowAnswer(false);
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl transition flex items-center gap-1 disabled:opacity-40"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

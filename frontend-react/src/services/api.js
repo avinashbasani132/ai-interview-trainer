@@ -151,11 +151,30 @@ export const api = {
 
   // Certificates
   getMyCertificates: () => request('/certificate/my-certificates'),
+  claimLatestCertificate: () => request('/certificate/claim-latest', { method: 'POST' }),
   generateCertificate: (interviewId, interviewType, mode) => request('/certificate/generate', {
     method: 'POST',
     body: { interview_id: interviewId, interview_type: interviewType, mode }
   }),
   getCertificateDownloadUrl: (certId) => `${API_BASE}/certificate/download/${certId}`,
+  downloadCertificatePdf: async (certId, filename) => {
+    const token = localStorage.getItem('access_token');
+    const url = `${API_BASE}/certificate/download/${certId}`;
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new Error('Failed to download certificate PDF');
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || `AI_Interview_Certificate_${certId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(blobUrl);
+  },
+
 
   // Learning Roadmap
   getRoadmap: () => request('/roadmap/'),
