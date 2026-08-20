@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import json
 
 # Add backend directory to sys.path
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -9,7 +8,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from app import create_app
-from models import User, Company, AptitudeQuestion, DSAProblem, Question
+
 
 class TestAIInterviewTrainer(unittest.TestCase):
     @classmethod

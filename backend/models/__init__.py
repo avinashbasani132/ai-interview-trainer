@@ -40,21 +40,36 @@ class MongoEngineDB:
 
     def init_app(self, app):
         """
-        Connect MongoEngine to the Flask app using MONGODB_SETTINGS from config.
+        Connect MongoEngine to the Flask app using MONGODB_SETTINGS from config or MONGODB_URI from environment.
         Called by the app factory after Flask and extensions are initialized.
         """
+        import os
+        env_uri = os.getenv("MONGODB_URI")
         settings = app.config.get('MONGODB_SETTINGS', {})
-        host = settings.get('host', 'localhost')
+        host = env_uri or settings.get('host', 'localhost')
         port = settings.get('port', 27017)
         db_name = settings.get('db', 'interview_trainer')
 
         # If host is a full URI string (e.g. mongodb+srv://...), connect via URI
-        if host.startswith('mongodb'):
+        if host and str(host).startswith('mongodb'):
             try:
                 import certifi
-                mongoengine.connect(host=host, db=db_name, uuidRepresentation='standard', tlsCAFile=certifi.where())
+                mongoengine.connect(
+                    host=host, 
+                    db=db_name, 
+                    uuidRepresentation='standard', 
+                    tlsCAFile=certifi.where(),
+                    serverSelectionTimeoutMS=10000,
+                    connectTimeoutMS=10000
+                )
             except Exception:
-                mongoengine.connect(host=host, db=db_name, uuidRepresentation='standard')
+                mongoengine.connect(
+                    host=host, 
+                    db=db_name, 
+                    uuidRepresentation='standard',
+                    serverSelectionTimeoutMS=10000,
+                    connectTimeoutMS=10000
+                )
         else:
             mongoengine.connect(
                 db=db_name,
@@ -62,6 +77,7 @@ class MongoEngineDB:
                 port=port,
                 uuidRepresentation='standard'
             )
+
 
 
 
