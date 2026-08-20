@@ -22,7 +22,10 @@ data/
 # Logs
 *.log
 *.txt
+!requirements.txt
+!backend/requirements.txt
 traceback_user.log
+
 
 # Uploads (user files)
 backend/uploads/
