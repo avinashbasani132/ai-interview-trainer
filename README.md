@@ -194,7 +194,7 @@ npm run dev
 1. Sign up at [render.com](https://render.com) and link your GitHub account.
 2. Click **New +** $\rightarrow$ **Web Service** and select `avinashbasani132/ai-interview-trainer`.
 3. Configure the following fields:
-   - **Build Command**: `pip install -r requirements.txt && npm --prefix frontend-react install && npm --prefix frontend-react run build`
+   - **Build Command**: `chmod +x build.sh && ./build.sh`
    - **Start Command**: `gunicorn --chdir backend "app:create_app()" --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
 4. Add the following **Environment Variables** in Render:
    - `MONGODB_URI`: Your MongoDB Atlas URI
