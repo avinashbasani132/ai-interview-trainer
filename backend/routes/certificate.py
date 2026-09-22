@@ -12,12 +12,17 @@ from services.certificate_service import CertificateService
 logger = logging.getLogger(__name__)
 certificate_bp = Blueprint('certificate', __name__)
 
-CERTIFICATES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/certificates'))
+import tempfile
 
+CERTIFICATES_DIR = os.path.join('/tmp', 'certificates') if os.getenv("RENDER") else os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/certificates'))
 
 def _ensure_dir():
+    global CERTIFICATES_DIR
     if not os.path.exists(CERTIFICATES_DIR):
-        os.makedirs(CERTIFICATES_DIR)
+        try:
+            os.makedirs(CERTIFICATES_DIR)
+        except Exception:
+            CERTIFICATES_DIR = tempfile.gettempdir()
 
 
 def _generate_unique_id():

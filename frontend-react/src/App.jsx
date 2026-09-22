@@ -143,7 +143,7 @@ export default function App() {
   // Full-page dedicated layout for Administrator Portal (no candidate sidebar)
   if (activeView === 'admin' && isAdmin) {
     return (
-      <div className="min-h-screen w-screen bg-slate-950 text-white font-sans overflow-x-hidden">
+      <div className="min-h-screen w-screen bg-background text-white font-sans overflow-x-hidden relative">
         <Admin 
           logout={logout} 
           toggleTheme={toggleTheme} 
@@ -155,7 +155,11 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-white font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-background text-white font-sans relative">
+      {/* Animated Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px] animate-blob pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/10 blur-[120px] animate-blob animation-delay-2000 pointer-events-none z-0"></div>
+      
       {/* Sidebar Navigation */}
       <Sidebar 
         activeView={activeView} 
@@ -167,7 +171,7 @@ export default function App() {
       />
 
       {/* Main Panel Area */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10">
         {/* Header bar */}
         <Header 
           toggleSidebar={toggleSidebar} 
@@ -176,7 +180,7 @@ export default function App() {
         />
 
         {/* Dynamic content view */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-950">
+        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-transparent relative z-10">
           <div className="max-w-6xl mx-auto">
             {renderView()}
           </div>

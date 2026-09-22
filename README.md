@@ -116,7 +116,7 @@ A dedicated, full-screen management control suite:
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React 18, Vite 8, TailwindCSS v4, Monaco Editor, Lucide Icons |
+| **Frontend** | React 18, Vite 8, TailwindCSS v4 (Premium Glassmorphism Design System), Monaco Editor, Lucide Icons |
 | **Backend** | Python 3.10+, Flask 3.x, Flask-CORS, Flask-JWT-Extended |
 | **Database** | MongoDB Atlas (NoSQL) via MongoEngine ODM & `pymongo[srv]` |
 | **AI Engine** | Google Gemini Generative AI (`google-genai`) |
@@ -201,6 +201,7 @@ npm run dev
    - `SECRET_KEY`: `interview-trainer-secure-secret-key-2026`
    - `JWT_SECRET_KEY`: `interview-trainer-jwt-secret-key-2026`
    - `FLASK_ENV`: `production`
+   - `RENDER`: `true` (Used by the backend to write ephemeral HR videos/certificates safely to `/tmp`)
    - `GEMINI_API_KEY`: *(Optional)* Your Google Gemini API Key
 5. Click **Deploy Web Service**!
 

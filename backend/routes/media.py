@@ -5,11 +5,19 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import InterviewSession, RoundResult, User
 from services.ai_service import ai_service
 
+import tempfile
+
 media_bp = Blueprint('media', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'hr')
+if os.getenv("RENDER"):
+    UPLOAD_FOLDER = os.path.join('/tmp', 'uploads', 'hr')
+else:
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'hr')
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+except Exception:
+    UPLOAD_FOLDER = tempfile.gettempdir()
 
 ALLOWED_EXTENSIONS = {'webm', 'mp4', 'ogg', 'wav'}
 

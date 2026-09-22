@@ -1,41 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
+@config "../tailwind.config.js";
 
 @theme {
   --color-slate-950: #020617;
+  --color-background: #050505;
+  --color-surface: #0A0F1C;
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #818cf8;
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+
+  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
+  --animate-pulse-glow: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-blob: blob 7s infinite;
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    50% { opacity: .7; filter: brightness(1.2); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
 }
 
 @layer base {
   body {
-    font-family: 'Inter', sans-serif;
-    @apply bg-slate-950 text-white min-h-screen overflow-x-hidden;
+    font-family: var(--font-sans);
+    @apply bg-background text-white min-h-screen overflow-x-hidden antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
   }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-slate-950;
+  @apply bg-background/50;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors backdrop-blur-md;
 }
 
 /* Spinner Loader */
 .loader {
-  border: 4px solid rgba(243, 243, 243, 0.1);
-  border-top: 4px solid #3b82f6; /* Blue 500 */
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid #6366f1; /* Primary Indigo */
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl;
+}
+.glass-panel-hover {
+  @apply transition-all duration-300 hover:bg-white/[0.05] hover:border-primary/30 hover:shadow-[0_8px_32px_0_rgba(99,102,241,0.15)] hover:-translate-y-1;
+}
+
+.glass-nav {
+  @apply bg-background/70 backdrop-blur-md border-b border-white/[0.05];
+}
+
+/* Text Gradients */
+.text-gradient-primary {
+  @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
 }
 
 /* Light Mode Inversion Filter */
@@ -55,5 +113,5 @@ html.light-mode .no-invert {
 
 /* Custom Utility Classes */
 .sidebar-link-active {
-  @apply bg-slate-800 text-white font-bold;
+  @apply bg-primary/10 text-primary font-bold border border-primary/20 shadow-[inset_0_0_12px_rgba(99,102,241,0.2)];
 }
